@@ -811,6 +811,12 @@ bool WfdSinkSession::HandleM4Request(const std::string &message)
         timeoutTimer_->StartTimer(WFD_TIMEOUT_6_SECOND, "Waiting for M5/SET_PARAMETER Triger request");
     }
 
+    if (videoTrack_.width == 0 || videoTrack_.height == 0) {
+        SHARING_LOGE("invalid video track info, reject M4.");
+        NotifyServiceError();
+        return false;
+    }
+
     // Send M4 response
     if (!SendCommonResponse(incomingCSeq)) {
         if (timeoutTimer_) {

@@ -57,6 +57,7 @@ public:
         void OnP2pActionResult(Wifi::P2pActionCallback action, Wifi::ErrCode code) override;
         void OnP2pServicesChanged(const std::vector<Wifi::WifiP2pServiceInfo> &srvInfo) override;
         void OnP2pChrErrCodeReport(const int errCode) override;
+        void OnP2pServiceDiscoveryResult(const P2pServiceDiscoveryInfo &info, const WifiP2pDevice &device) override;
 
     private:
         std::weak_ptr<WfdSourceScene> scene_;

@@ -237,8 +237,8 @@ void WfdSourceScene::WfdP2pCallback::OnP2pChrErrCodeReport(const int errCode)
     SHARING_LOGD("%{public}s.", __FUNCTION__);
 }
 
-void WfdSourceScene::WfdP2pCallback::OnP2pServiceDiscoveryResult(const P2pServiceDiscoveryInfo &info,
-    const WifiP2pDevice &device)
+void WfdSourceScene::WfdP2pCallback::OnP2pServiceDiscoveryResult(const Wifi::P2pServiceDiscoveryInfo &info,
+    const Wifi::WifiP2pDevice &device)
 {
     SHARING_LOGD("%{public}s.", __FUNCTION__);
 }

@@ -67,6 +67,8 @@ public:
         void OnP2pServicesChanged(const std::vector<Wifi::WifiP2pServiceInfo> &srvInfo) override;
         void OnP2pChrErrCodeReport(const int errCode) override;
         bool GetErrorCode(Wifi::ErrCode errorCode, SinkErrorCode &sharingError);
+        void OnP2pServiceDiscoveryResult(const Wifi::P2pServiceDiscoveryInfo &info,
+            const Wifi::WifiP2pDevice &device) override;
 
     private:
         std::weak_ptr<WfdSinkScene> parent_;

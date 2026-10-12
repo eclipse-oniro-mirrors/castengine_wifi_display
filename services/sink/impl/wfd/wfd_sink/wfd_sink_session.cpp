@@ -807,14 +807,15 @@ bool WfdSinkSession::HandleM4Request(const std::string &message)
     m4Request.GetVideoTrack(videoTrack_);
     m4Request.GetAudioTrack(audioTrack_);
     int incomingCSeq = m4Request.GetCSeq();
-    if (timeoutTimer_ && isFirstCast) {
-        timeoutTimer_->StartTimer(WFD_TIMEOUT_6_SECOND, "Waiting for M5/SET_PARAMETER Triger request");
-    }
 
     if (videoTrack_.width == 0 || videoTrack_.height == 0) {
-        SHARING_LOGE("invalid video track info, reject M4.");
+        SHARING_LOGE("invalid video track, reject M4.");
         NotifyServiceError();
         return false;
+    }
+
+    if (timeoutTimer_ && isFirstCast) {
+        timeoutTimer_->StartTimer(WFD_TIMEOUT_6_SECOND, "Waiting for M5/SET_PARAMETER Triger request");
     }
 
     // Send M4 response

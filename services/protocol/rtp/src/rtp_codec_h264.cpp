@@ -21,6 +21,9 @@
 
 namespace OHOS {
 namespace Sharing {
+
+constexpr int32_t FU_A_HEADER_SIZE = 2;
+
 class FuFlags {
 public:
 #if __BYTE_ORDER == __BIG_ENDIAN
@@ -49,6 +52,10 @@ void RtpDecoderH264::InputRtp(const RtpPacket::Ptr &rtp)
     RETURN_IF_NULL(rtp);
     auto frame = rtp->GetPayload();
     int32_t length = static_cast<int32_t>(rtp->GetPayloadSize());
+    if (length <= 0 || frame == nullptr) {
+        MEDIA_LOGW("Empty or null RTP payload, dropping packet");
+        return;
+    }
     auto stamp = rtp->GetStampMS();
     auto seq = rtp->GetSeq();
     int32_t nal = H264_TYPE(frame[0]);
@@ -126,6 +133,11 @@ bool RtpDecoderH264::UnpackFuA(const RtpPacket::Ptr &rtp, const uint8_t *ptr, ss
     RETURN_FALSE_IF_NULL(rtp);
     RETURN_FALSE_IF_NULL(ptr);
     RETURN_FALSE_IF_NULL(frame_);
+    if (size < FU_A_HEADER_SIZE) {
+        MEDIA_LOGW("Invalid FU-A payload size: %{public}zd", size);
+        gopDropped_ = true;
+        return false;
+    }
     uint8_t nalSuffix = *ptr & (~0x1F);
     FuFlags *fu = (FuFlags *)(ptr + 1);
     if (fu->startBit_) {

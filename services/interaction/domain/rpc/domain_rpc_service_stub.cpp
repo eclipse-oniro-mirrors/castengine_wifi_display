@@ -115,9 +115,9 @@ int32_t DomainRpcServiceStub::SetListenerObject(const sptr<IRemoteObject> &objec
         SHARING_LOGE("deathRecipient create failed.");
         return -1;
     }
-    std::unique_lock<std::mutex> lock(mutex_);
+    std::unique_lock<std::mutex> deathlock(mutex_);
     deathRecipients_[peerDevId] = deathRecipient;
-    lock.unlock();
+    deathlock.unlock();
     CreateDeathListener(peerDevId);
 
     if (peerProxy->AsObject() != nullptr) {

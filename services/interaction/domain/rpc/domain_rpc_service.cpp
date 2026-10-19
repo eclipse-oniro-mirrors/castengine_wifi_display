@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+SetListenerObject
 #include "domain_rpc_service.h"
 #include "access_token.h"
 #include "accesstoken_kit.h"
@@ -102,6 +102,7 @@ int32_t DomainRpcService::DoRpcCommand(std::shared_ptr<BaseDomainMsg> msg, std::
 void DomainRpcService::CreateDeathListener(std::string deviceId)
 {
     SHARING_LOGD("deviceId: %{public}s.", GetAnonymousDeviceId(deviceId).c_str());
+    std::unique_lock<std::mutex> lock(mutex_);
     if (deathRecipients_.find(deviceId) != deathRecipients_.end()) {
         auto listener = std::make_shared<DomainRpcServiceDeathListener>();
         if (shared_from_this_ == nullptr) {

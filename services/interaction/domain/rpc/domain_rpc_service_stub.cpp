@@ -27,6 +27,7 @@ namespace Sharing {
 DomainRpcServiceStub::~DomainRpcServiceStub()
 {
     SHARING_LOGD("trace.");
+    std::unique_lock<std::mutex> lock(mutex_);
     for (auto deathRecipient : deathRecipients_) {
         if (deathRecipient.second != nullptr) {
             deathRecipient.second->SetDeathListener(nullptr);
@@ -92,16 +93,17 @@ int32_t DomainRpcServiceStub::SetListenerObject(const sptr<IRemoteObject> &objec
     std::string peerDevId = IPCSkeleton::GetCallingDeviceID();
     std::unique_lock<std::mutex> lock(mutex_);
     peerProxys_[peerDevId] = peerProxy;
-    lock.unlock();
     SHARING_LOGD("peer deviceId: %{public}s, listener num: %{public}zu.", GetAnonymousDeviceId(peerDevId).c_str(),
                  peerProxys_.size());
 
     auto deathRecipient = new (std::nothrow) DomainRpcDeathRecipient(peerDevId);
     if (deathRecipient == nullptr) {
+        lock.unlock();
         SHARING_LOGE("deathRecipient create failed.");
         return -1;
     }
     deathRecipients_[peerDevId] = deathRecipient;
+    lock.unlock();
     CreateDeathListener(peerDevId);
 
     if (peerProxy->AsObject() != nullptr) {

@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-SetListenerObject
+
 #include "domain_rpc_service.h"
 #include "access_token.h"
 #include "accesstoken_kit.h"

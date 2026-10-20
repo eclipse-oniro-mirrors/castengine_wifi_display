@@ -22,6 +22,7 @@
 namespace OHOS {
 namespace Sharing {
 namespace IPC_CODEC {
+constexpr int32_t DEVICE_LIST_MAX_SIZE = 1000;
 
 bool IpcEncodeBindAttr(MessageParcel &pIpcMsg, bool attr);
 bool IpcEncodeBindAttr(MessageParcel &pIpcMsg, int8_t attr);
@@ -91,6 +92,9 @@ bool IpcDecodeBindAttr(MessageParcel &pIpcMsg, std::vector<TYPE> &vec)
 {
     int32_t size;
     IpcDecodeBindAttr(pIpcMsg, size);
+    if (size < 0 || size > DEVICE_LIST_MAX_SIZE) {
+        return false;
+    }
     vec.resize(size);
 
     for (int i = 0; i < size; i++) {

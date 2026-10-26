@@ -81,6 +81,7 @@ int32_t InterIpcServiceStub::DoIpcCommand(std::shared_ptr<BaseMsg> msg, std::sha
 void InterIpcServiceStub::CreateDeathListener(std::string key)
 {
     SHARING_LOGD("trace.");
+    std::unique_lock<std::mutex> lock(mutex_);
     if (deathRecipients_.find(key) != deathRecipients_.end()) {
         SHARING_LOGI("key: %{public}s.", key.c_str());
         auto listener = std::make_shared<InterIpcServiceDeathListener>();
@@ -124,15 +125,16 @@ int32_t InterIpcServiceStub::SetListenerObject(std::string key, const sptr<IRemo
 
     std::unique_lock<std::mutex> lock(mutex_);
     peerProxys_[key] = peerProxy;
-    lock.unlock();
     SHARING_LOGD("peer key: %{public}s, listener num: %{public}zu.", key.c_str(), peerProxys_.size());
 
     auto deathRecipient = new (std::nothrow) InterIpcDeathRecipient(key);
     if (deathRecipient == nullptr) {
+        lock.unlock();
         SHARING_LOGE("deathRecipient create failed.");
         return -1;
     }
     deathRecipients_[key] = deathRecipient;
+    lock.unlock();
     CreateDeathListener(key);
 
     if (peerProxy->AsObject() != nullptr) {

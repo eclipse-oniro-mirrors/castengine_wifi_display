@@ -35,8 +35,6 @@ int32_t IpcMsgDecoder::DomainMsgDecode(std::shared_ptr<BaseDomainMsg> &sharingMs
         SHARING_LOGE("decode domain msg failed.");
         return ret;
     }
-
-    sharingMsg = std::static_pointer_cast<BaseDomainMsg>(reply);
     return 0;
 }
 

@@ -20,7 +20,6 @@
 #include "common/const_def.h"
 #include "protocol/frame/frame.h"
 #include "utils/data_buffer.h"
-#include "parameters.h"
 
 namespace OHOS {
 namespace Sharing {

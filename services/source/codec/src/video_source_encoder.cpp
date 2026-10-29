@@ -221,7 +221,7 @@ bool VideoSourceEncoder::StartEncoder()
         SHARING_LOGE("Prepare encoder failed!");
         return false;
     }
-    isMediaDumpEnable_ = OHOS::system::GetBoolParameter(PARAM_MEDIA_DUMP, false);
+    isMediaDumpEnable_ = false;
     if (isMediaDumpEnable_) {
         if (dumpFp_ == nullptr) {
             dumpFp_ = fopen("/data/service/el1/public/sharing_service/sharing_media_video.es", "wb");

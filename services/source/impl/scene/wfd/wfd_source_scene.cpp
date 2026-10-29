@@ -865,7 +865,7 @@ void WfdSourceScene::SetLocalDeviceName()
         DmDeviceInfo local;
         if (DeviceManager::GetInstance().GetLocalDeviceInfo(DM_PKG_NAME, local) != DM_OK) {
             HILOG_COMM_ERROR("Cannot get the local device info from DM");
-            p2p->SetP2pDeviceName("DeviceName");
+            p2p->SetP2pDeviceName("OpenHarmony");
         } else {
             HILOG_COMM_INFO("WfdP2pStart local deviceName = %{public}s.", GetAnonyString(local.deviceName).c_str());
             p2p->SetP2pDeviceName(local.deviceName);

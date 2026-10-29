@@ -61,7 +61,7 @@ public:
         void OnP2pActionResult(Wifi::P2pActionCallback action, Wifi::ErrCode code) override;
         void OnP2pServicesChanged(const std::vector<Wifi::WifiP2pServiceInfo> &srvInfo) override;
         std::string GetUdidHash(std::string deviceId);
-       static bool GetErrorCode(Wifi::ErrCode errorCode, std::pair<SharingErrorCode, std::string>& sharingError);
+        static bool GetErrorCode(Wifi::ErrCode errorCode, std::pair<SharingErrorCode, std::string>& sharingError);
         void OnP2pChrErrCodeReport(const int errCode) override;
         Wifi::WifiP2pDevice GetGoDevice(const Wifi::WifiP2pGroupInfo &group,
                                          const std::shared_ptr<WfdSourceScene> &scene);

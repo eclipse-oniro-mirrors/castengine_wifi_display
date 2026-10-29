@@ -865,7 +865,7 @@ void WfdSourceScene::SetLocalDeviceName()
         DmDeviceInfo local;
         if (DeviceManager::GetInstance().GetLocalDeviceInfo(DM_PKG_NAME, local) != DM_OK) {
             HILOG_COMM_ERROR("Cannot get the local device info from DM");
-            p2p->SetP2pDeviceName("HarmonyOS");
+            p2p->SetP2pDeviceName("DeviceName");
         } else {
             HILOG_COMM_INFO("WfdP2pStart local deviceName = %{public}s.", GetAnonyString(local.deviceName).c_str());
             p2p->SetP2pDeviceName(local.deviceName);
@@ -1068,7 +1068,7 @@ int32_t WfdSourceScene::CreateScreenCapture()
             return ERR_AGENT_CREATE;
         } else {
             HILOG_COMM_INFO("Create ScreenCapture sink agent, contextId: %{public}u, agentId: %{public}u",
-                            contextId_.load(), agentId_.load());
+                contextId_.load(), agentId_.load());
         }
         lock.unlock();
 

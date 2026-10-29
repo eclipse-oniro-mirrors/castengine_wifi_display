@@ -221,7 +221,7 @@ bool VideoSourceEncoder::StartEncoder()
         SHARING_LOGE("Prepare encoder failed!");
         return false;
     }
-    isMediaDumpEnable_ = OHOS::system::GetBoolParameter(PARAM_MEDIA_DUMP, false);
+    isMediaDumpEnable_ = false;
     if (isMediaDumpEnable_) {
         if (dumpFp_ == nullptr) {
             dumpFp_ = fopen("/data/service/el1/public/sharing_service/sharing_media_video.es", "wb");
@@ -308,7 +308,12 @@ void VideoSourceEncoder::OnOutputBufferAvailable(uint32_t index, MediaAVCodec::A
         SHARING_LOGE("Save first sps pps");
         spsBufferSize_ = static_cast<uint32_t>(info.size);
         spsBuffer_ = std::make_unique<uint8_t[]>(info.size);
-        memcpy_s(spsBuffer_.get(), info.size, buffer->GetBase(), info.size);
+        if (memcpy_s(spsBuffer_.get(), info.size, buffer->GetBase(), info.size) != EOK) {
+            SHARING_LOGE("Copy sps pps data failed.");
+            spsBuffer_.reset();
+            spsBufferSize_ = 0;
+            return;
+        }
         int32_t ret = videoEncoder_->ReleaseOutputBuffer(index);
         if (ret != MediaAVCodec::AVCS_ERR_OK) {
             SHARING_LOGE("Release output buffer failed, ret: %{public}d.", ret);

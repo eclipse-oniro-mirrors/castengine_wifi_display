@@ -164,6 +164,7 @@ constexpr int32_t DEAL_VIRTUAL_SCREEN = 1083;
 
 inline constexpr char PARAM_MEDIA_DUMP[] = "debug.cast.media.dump";
 inline constexpr char PARAM_YUV_SUPPORT[] = "debug.cast.yuv.support";
+inline constexpr char PARAM_MEDIA_DUMP[] = "debug.cast.media.dump";
 
 enum TrackType { TRACK_INVALID = -1, TRACK_VIDEO = 0, TRACK_AUDIO, TRACK_TITLE, TRACK_APPLICATION, TRACK_MAX };
 

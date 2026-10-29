@@ -20,6 +20,7 @@
 #include <string>
 #include "agent/agent_def.h"
 #include "const_def.h"
+#include "interaction/ipc_codec/ipc_codec_bind_macros.h"
 #include "sharing_log.h"
 #include "surface.h"
 
@@ -46,7 +47,8 @@
     EVENT_AGENT_STATE_PROSUMER_RESUME, EVENT_AGENT_STATE_PROSUMER_DESTROY, EVENT_AGENT_STATE_PLAY_START,               \
     EVENT_AGENT_STATE_PLAY_STOP, EVENT_AGENT_PROSUMER_ERROR, EVENT_AGENT_CHANNEL_SETVOLUME, EVENT_AGENT_KEYMODE_START, \
     EVENT_AGENT_KEYMODE_STOP, EVENT_AGENT_ACCELERATION_DONE, EVENT_AGENT_DECODER_DIED,                                \
-    EVENT_AGENT_STATE_PROSUMER_INIT
+    EVENT_AGENT_STATE_PROSUMER_INIT, EVENT_AGENT_STATE_PROSUMER_STARTED, EVENT_AGENT_PROSUMER_COMMON,                 \
+    EVENT_AGENT_SET_BLACK_EDGE_ENABLE, EVENT_AGENT_BLACK_EDGE_RECT, EVENT_AGENT_BLACK_EDGE_CROP_INFO
 
 #define EVENT_SESSION EVENT_SESSION_BASE = MAKE_EVENT_TYPE(3, 0), EVENT_SESSION_INIT, EVENT_SESSION_TEARDOWN
 #define EVENT_MEDIA                                                                                                   \
@@ -57,7 +59,8 @@
     EVENT_MEDIA_PRODUCER_PAUSE, EVENT_MEDIA_PRODUCER_RESUME, EVENT_MEDIA_MIXPLAYER_CREATE,                            \
     EVENT_MEDIA_MIXPLAYER_DESTROY, EVENT_MEDIA_MIXPLAYER_START, EVENT_MEDIA_MIXPLAYER_STOP,                           \
     EVENT_MEDIA_CHANNEL_APPENDSURFACE, EVENT_MEDIA_CHANNEL_REMOVESURFACE, EVENT_MEDIA_CHANNEL_SETSCENETYPE,           \
-    EVENT_MEDIA_CHANNEL_SETVOLUME, EVENT_MEDIA_CHANNEL_KEY_REDIRECT, EVENT_AGENT_STATE_WRITE_WARNING
+    EVENT_MEDIA_CHANNEL_SETVOLUME, EVENT_MEDIA_CHANNEL_KEY_REDIRECT, EVENT_AGENT_STATE_WRITE_WARNING,                 \
+    EVENT_MEDIA_CHANNEL_SETBLACKEDGEENABLE, EVENT_MEDIA_CHANNEL_SETBLACKEDGECROPINFO
 
 #define EVENT_SCHEDULER EVENT_SCHEDULER_BASE = MAKE_EVENT_TYPE(5, 0)
 
@@ -65,7 +68,7 @@
     EVENT_INTERACTION_BASE = MAKE_EVENT_TYPE(6, 0), EVENT_INTERACTIONMGR_REMOVE_INTERACTION,                         \
     EVENT_INTERACTION_MSG_ERROR, EVENT_INTERACTION_STATE_AGENT_DESTROYED, EVENT_INTERACTION_STATE_CONTEXT_DESTROYED, \
     EVENT_INTERACTIONMGR_DESTROY_INTERACTION, EVENT_INTERACTION_ACCELERATION_DONE,                                   \
-    EVENT_INTERACTION_STATE_REMOVE_SURFACE, EVENT_INTERACTION_DECODER_DIED
+    EVENT_INTERACTION_STATE_REMOVE_SURFACE, EVENT_INTERACTION_DECODER_DIED, EVENT_INTERACTION_BLACK_EDGE_RECT
 
 #define EVENT_CONFIGURE                                                                            \
     EVENT_CONFIGURE_BASE = MAKE_EVENT_TYPE(7, 0), EVENT_CONFIGURE_READY, EVENT_CONFIGURE_INTERACT, \
@@ -74,10 +77,14 @@
 #define EVENT_WFD                                                                             \
     EVENT_WFD_BASE = MAKE_EVENT_TYPE(9, 0), EVENT_WFD_MEDIA_INIT, EVENT_WFD_STATE_MEDIA_INIT, \
     EVENT_WFD_NOTIFY_RTSP_PLAYED, EVENT_WFD_NOTIFY_RTSP_TEARDOWN, EVENT_WFD_REQUEST_IDR,      \
-    EVENT_WFD_NOTIFY_IS_PC_SOURCE, EVENT_WFD_NOTIFY_TCP_SUCCESS
+    EVENT_WFD_NOTIFY_SET_REFRESHRATE, EVENT_WFD_NOTIFY_EVENT, EVENT_WFD_NOTIFY_IS_PC_SOURCE,  \
+    EVENT_WFD_NOTIFY_TCP_SUCCESS
 
 #define EVENT_SCREEN_CAPTURE    \
-    EVENT_SCREEN_CAPTURE_BASE = MAKE_EVENT_TYPE(11, 0), EVENT_SCREEN_CAPTURE_INIT
+    EVENT_SCREEN_CAPTURE_BASE = MAKE_EVENT_TYPE(11, 0), EVENT_SCREEN_CAPTURE_INIT, \
+    EVENT_SCREEN_CAPTURE_SET_AUDIO, EVENT_SCREEN_REQUEST_IDR,  \
+    EVENT_SCREEN_CAPTURE_SET_REFRESHRATE, EVENT_SCREEN_CAPTURE_SET_DISPLAY, \
+    EVENT_SCREEN_CAPTURE_COMMON, EVENT_SCREEN_CAPTURE_APPEND_SURFACE
 
 namespace OHOS {
 namespace Sharing {
@@ -143,6 +150,28 @@ struct EventMsg : public FromMsg,
     SharingErrorCode errorCode = ERR_OK;
 };
 
+struct BlackEdgeCropRect {
+
+    IPC_BIND_ATTR(cropTop, cropLeft, displayWidth, displayHeight, fullWidth, fullHeight)
+
+    int32_t cropTop;
+    int32_t cropLeft;
+    int32_t displayWidth;
+    int32_t displayHeight;
+    int32_t fullWidth;
+    int32_t fullHeight;
+};
+
+struct BlackEdgeCropInfo {
+
+    IPC_BIND_ATTR(top, left, displayWidth, displayHeight)
+
+    int32_t top;
+    int32_t left;
+    int32_t displayWidth;
+    int32_t displayHeight;
+};
+
 struct ContextEventMsg : public EventMsg {
     using Ptr = std::shared_ptr<ContextEventMsg>;
 
@@ -152,6 +181,7 @@ struct ContextEventMsg : public EventMsg {
     sptr<Surface> surface = nullptr;
     AgentType agentType;
     MediaType mediaType;
+    std::string localIp;
 };
 
 struct AgentEventMsg : public ContextEventMsg {
@@ -161,6 +191,9 @@ struct AgentEventMsg : public ContextEventMsg {
     float volume;
     uint32_t prosumerId = INVALID_ID;
     SceneType sceneType;
+    bool isBlackEdgeEnable;
+    BlackEdgeCropRect blackEdgeRect;
+    BlackEdgeCropInfo blackEdgeCropInfo;
 };
 
 struct SessionEventMsg : public AgentEventMsg {
@@ -188,6 +221,10 @@ struct SessionStatusMsg : public AgentStatusMsg {
     MediaType mediaType;
     SceneType sceneType;
     bool isPcSource;
+    bool isBlackEdgeEnable;
+    BlackEdgeCropRect blackEdgeRect;
+    BlackEdgeCropInfo blackEdgeCropInfo;
+    std::string localIp;
 };
 
 struct WindowProperty {
@@ -216,6 +253,7 @@ struct InteractionEventMsg : public EventMsg {
     uint32_t contextId = INVALID_ID;
     uint64_t surfaceId = INVALID_ID;
     AgentType agentType = NONE_AGENT;
+    BlackEdgeCropRect blackEdgeRect;
 };
 
 struct AudioTrack {

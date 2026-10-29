@@ -15,6 +15,7 @@ import("//build/ohos.gni")
 import("//foundation/CastEngine/castengine_wifi_display/config.gni")
 
 ohos_source_set("sharing_wfd_source_scene_srcs") {
+  branch_protector_ret = "pac_ret"
   sanitize = {
     cfi = true
     cfi_cross_dso = true
@@ -64,6 +65,7 @@ ohos_source_set("sharing_wfd_source_scene_srcs") {
     "ipc:ipc_single",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
+    "memmgr:memmgrclient",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
@@ -73,5 +75,5 @@ ohos_source_set("sharing_wfd_source_scene_srcs") {
   ]
 
   subsystem_name = "castplus"
-  part_name = "sharing_framework"
+  part_name = "wifi_display"
 }

@@ -19,6 +19,7 @@
 #include <fstream>
 #include <securec.h>
 #include <sstream>
+#include <sys/resource.h>
 #include <sys/time.h>
 #include <thread>
 #include "common/common_macro.h"
@@ -26,6 +27,12 @@
 
 namespace OHOS {
 namespace Sharing {
+
+#undef LOG_DOMAIN
+#undef LOG_TAG
+#define LOG_DOMAIN SHARING_LOG_DOMAIN
+#define LOG_TAG SHARING_LOG_TAG
+
 constexpr int IP_LEN = 64;
 constexpr uint32_t MIN_DEVICE_ID_LEN = 10;
 constexpr uint32_t MAC_LEN = 17;
@@ -38,6 +45,15 @@ unsigned long long GetThreadId()
     buf << tid;
     std::string stid = buf.str();
     return std::stoull(stid);
+}
+
+void SetThreadPriority(int threadId, int prio)
+{
+    if (prio > 19 || prio < -20) { // The priority can be set within range [-20, 19]
+        SHARING_LOGE("prio is error");
+        return;
+    }
+    setpriority(PRIO_PROCESS, threadId, prio);
 }
 
 std::vector<std::string> Split(const std::string &s, const char *delim)
@@ -63,6 +79,7 @@ std::vector<std::string> Split(const std::string &s, const char *delim)
     return ret;
 }
 
+#ifdef WFD_SINK
 std::vector<std::string> SplitOnce(const std::string &s, const char *delim)
 {
     std::vector<std::string> ret;
@@ -80,6 +97,7 @@ std::vector<std::string> SplitOnce(const std::string &s, const char *delim)
 
     return ret;
 }
+#endif
 
 #define TRIM(s, chars)                                             \
     do {                                                           \
@@ -107,6 +125,7 @@ std::string Trim(std::string &&s, const std::string &chars)
 
 #define ADD_VECTOR_END(v, i) (v).push_back((i))
 
+#ifdef WFD_SINK
 std::string LowerCase(std::string value)
 {
     return ChangeCase(value, true);
@@ -116,6 +135,7 @@ std::string UpperCase(std::string value)
 {
     return ChangeCase(value, false);
 }
+#endif
 
 void LTrim(std::string &value)
 {
@@ -143,6 +163,7 @@ void Trim(std::string &value)
     RTrim(value);
 }
 
+#ifdef WFD_SINK
 std::string ChangeCase(const std::string &value, bool LowerCase)
 {
     std::string newvalue(value);
@@ -168,6 +189,7 @@ void Replace(std::string &target, std::string search, std::string replacement)
         lastPos = i + replacement.length();
     }
 }
+#endif
 
 void Split(std::string str, std::string separator, std::vector<std::string> &result)
 {
@@ -191,7 +213,7 @@ uint64_t GetCurrentMillisecond()
     gettimeofday(&tv, nullptr);
     return tv.tv_sec * 1000 + tv.tv_usec / 1000; // 1000: time base conversion.
 }
-
+#ifdef WFD_SINK
 uint16_t SwapEndian16(uint16_t value)
 {
     return (value & 0xff00) >> 8 | (value & 0x00ff) << 8; // 8: swap endian
@@ -268,6 +290,7 @@ void SetLE32(void *p, uint32_t val)
     data[2] = val >> 16; // 2: transformed position, 16: byte offset
     data[3] = val >> 24; // 3: transformed position, 24: byte offset
 }
+#endif
 
 std::string GetAnonyDevName(const std::string &value)
 {
@@ -288,7 +311,13 @@ std::string GetAnonyDevName(const std::string &value)
 std::string GetAnonyString(const std::string &value)
 {
     constexpr size_t INT32_SHORT_ID_LENGTH = 20;
-    constexpr size_t INT32_MIN_ID_LENGTH = 3;
+    constexpr size_t INT32_MIN_ID_LENGTH = 6;
+    constexpr size_t INDEX_1 = 1;
+    constexpr size_t INDEX_2 = 2;
+    constexpr size_t INDEX_3 = 3;
+    constexpr size_t INDEX_4 = 4;
+    constexpr size_t INDEX_5 = 5;
+    constexpr size_t INDEX_6 = 6;
     std::string result;
     std::string tmpStr("******");
     size_t strLen = value.length();
@@ -298,8 +327,18 @@ std::string GetAnonyString(const std::string &value)
 
     if (strLen <= INT32_SHORT_ID_LENGTH) {
         result += value[0];
+        result += value[INDEX_1];
+        result += value[INDEX_2];
+        result += value[INDEX_3];
+        result += value[INDEX_4];
+        result += value[INDEX_5];
         result += tmpStr;
-        result += value[strLen - 1];
+        result += value[strLen - INDEX_6];
+        result += value[strLen - INDEX_5];
+        result += value[strLen - INDEX_4];
+        result += value[strLen - INDEX_3];
+        result += value[strLen - INDEX_2];
+        result += value[strLen - INDEX_1];
     } else {
         constexpr size_t INT32_PLAINTEXT_LENGTH = 4;
         result.append(value, 0, INT32_PLAINTEXT_LENGTH);
@@ -346,6 +385,28 @@ std::string GetLocalP2pAddress(const std::string &interface)
     }
 
     return std::string(ipString);
+}
+
+void NoIPLog(const std::string &buf, bool isCommLog)
+{
+    std::string target = "rtsp://192.168";
+    size_t start = 0;
+    size_t end = 0;
+    
+    while ((end = buf.find('\n', start)) != std::string::npos) {
+        std::string line = buf.substr(start, end - start);
+        size_t pos = line.find(target);
+        if (pos != std::string::npos) {
+            line = line.substr(0, pos);
+        }
+        if (isCommLog) {
+            HILOG_COMM_INFO("NoIPLog: %{public}s", line.c_str());
+        } else {
+            SHARING_LOGE("NoIPLog: %{public}s", line.c_str());
+        }
+        
+        start = end + 1;
+    }
 }
 
 std::string GetAnonymousIp(const std::string &ip)

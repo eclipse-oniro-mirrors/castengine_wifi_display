@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <iostream>
 #include <netinet/tcp.h>
+#include <poll.h>
 #include <unistd.h>
 #include "common/common_macro.h"
 #include "common/const_def.h"
@@ -32,7 +33,7 @@ const uint32_t ERRNO_MAX_LEN = 256;
 
 bool SocketUtils::CreateTcpServer(const char *ip, unsigned port, int32_t &fd)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     RETURN_FALSE_IF_NULL(ip);
     return CreateSocket(SOCK_STREAM, fd) && SetReuseAddr(fd, true) && SetNoDelay(fd, true) &&
            BindSocket(fd, ip, port) && ListenSocket(fd);
@@ -40,10 +41,10 @@ bool SocketUtils::CreateTcpServer(const char *ip, unsigned port, int32_t &fd)
 
 uint16_t SocketUtils::GetAvailableUdpPortPair()
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     static uint16_t gAvailablePort = minPort_;
 
-    SHARING_LOGD("current udp port: %{public}d.", gAvailablePort);
+    SHARING_LOGI("current udp port: %{public}d.", gAvailablePort);
     if (gAvailablePort >= maxPort_) {
         gAvailablePort = minPort_;
     }
@@ -64,7 +65,7 @@ uint16_t SocketUtils::GetAvailableUdpPortPair()
 
 uint16_t SocketUtils::GetAvailableUdpPortPair(uint16_t minPort, uint16_t maxPort)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     if (minPort == maxPort) {
         return 0;
     }
@@ -87,7 +88,7 @@ uint16_t SocketUtils::GetAvailableUdpPortPair(uint16_t minPort, uint16_t maxPort
 
 bool SocketUtils::IsUdpPortAvailable(uint16_t port)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     int32_t fd = -1;
     auto ret = CreateSocket(SOCK_DGRAM, fd) && BindSocket(fd, "", port);
     if (fd != -1) {
@@ -99,20 +100,22 @@ bool SocketUtils::IsUdpPortAvailable(uint16_t port)
 
 bool SocketUtils::CreateTcpClient(const char *ip, unsigned port, int32_t &fd, int32_t &ret)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     RETURN_FALSE_IF_NULL(ip);
     return CreateSocket(SOCK_STREAM, fd) && ConnectSocket(fd, true, ip, port, ret);
 }
 
+#ifdef WFD_SINK
 bool SocketUtils::CreateUdpSession(unsigned port, int32_t &fd)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     return CreateSocket(SOCK_DGRAM, fd) && SetRecvBuf(fd) && SetSendBuf(fd) && BindSocket(fd, "", port);
 }
+#endif
 
 bool SocketUtils::CreateSocket(int32_t socketType, int32_t &fd)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     fd = -1;
     if (socketType != SOCK_STREAM && socketType != SOCK_DGRAM) {
         SHARING_LOGE("type error: %{public}d!", socketType);
@@ -126,13 +129,14 @@ bool SocketUtils::CreateSocket(int32_t socketType, int32_t &fd)
         SHARING_LOGE("error: %{public}s!", errmsg);
         return false;
     }
-    SHARING_LOGD("success fd: %{public}d.", fd);
+    fdsan_exchange_owner_tag(fd, 0, SHARING_LOG_DOMAIN);
+    SHARING_LOGI("success fd: %{public}d.", fd);
     return true;
 }
 
 bool SocketUtils::BindSocket(int32_t fd, const std::string &host, uint16_t port)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     struct sockaddr_in addr = {};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
@@ -158,7 +162,7 @@ bool SocketUtils::BindSocket(int32_t fd, const std::string &host, uint16_t port)
 
 bool SocketUtils::ListenSocket(int32_t fd, uint32_t backlog)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     if (::listen(fd, backlog) == -1) {
         char errmsg[ERRNO_MAX_LEN] = {0};
         strerror_r(errno, errmsg, ERRNO_MAX_LEN);
@@ -171,7 +175,7 @@ bool SocketUtils::ListenSocket(int32_t fd, uint32_t backlog)
 
 bool SocketUtils::ConnectSocket(int32_t fd, bool isAsync, const std::string &ip, uint16_t port, int32_t &ret)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     if (ip == "") {
         SHARING_LOGE("ip null!");
         return false;
@@ -210,14 +214,63 @@ bool SocketUtils::ConnectSocket(int32_t fd, bool isAsync, const std::string &ip,
     }
 }
 
+bool SocketUtils::ConnectSocket(int32_t fd, bool isAsync, const std::string &localIp, uint16_t localPort,
+                                const std::string &ip, uint16_t port, int32_t &ret)
+{
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
+    if (ip == "") {
+        SHARING_LOGE("ip null!");
+        return false;
+    }
+    struct sockaddr_in localAddr = {};
+    localAddr.sin_family = AF_INET;
+    localAddr.sin_port = htons(localPort);
+    if (inet_pton(AF_INET, localIp.c_str(), &localAddr.sin_addr) <= 0) {
+        SHARING_LOGE("inet_pton localip error: %{public}s!", strerror(errno));
+        return false;
+    }
+    if (::bind(fd, (struct sockaddr *) &localAddr, sizeof(localAddr)) < 0) {
+        SHARING_LOGE("bind local address error: %{public}s!", strerror(errno));
+        return false;
+    }
+    struct sockaddr_in serverAddr = {};
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(port);
+    if (inet_pton(AF_INET, ip.c_str(), &serverAddr.sin_addr) <= 0) {
+        SHARING_LOGE("inet_pton ip error: %{public}s!", strerror(errno));
+        return false;
+    }
+
+    int32_t res = ::connect(fd, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
+    ret = res;
+    if (isAsync) {
+        if (res == 0) {
+            SHARING_LOGI("connect immediately.");
+            return true;
+        } else {
+            if (errno == EINPROGRESS) {
+                SHARING_LOGI("connecting.");
+                return SocketUtils::CheckAsyncConnect(fd);
+            } else {
+                return false;
+            }
+        }
+    } else {
+        if (res == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
+
 bool SocketUtils::CheckAsyncConnect(int32_t fd)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     if (fd < 0 || fd >= FD_SETSIZE) {
         SHARING_LOGE("fd out of select range: %{public}d.", fd);
         return false;
     }
-
     struct timeval timeout;
     timeout.tv_sec = 2;           // 2: wait +2 second
     timeout.tv_usec = 500 * 1000; // 500 * 1000: wait +0.5 second
@@ -250,16 +303,16 @@ bool SocketUtils::CheckAsyncConnect(int32_t fd)
 
 void SocketUtils::ShutDownSocket(int32_t fd)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     if (fd >= 0) {
-        SHARING_LOGD("shutdown fd: %{public}d.", fd);
+        SHARING_LOGI("shutdown fd: %{public}d.", fd);
         shutdown(fd, SHUT_RDWR);
     }
 }
 
 bool SocketUtils::SetReuseAddr(int32_t fd, bool isReuse)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     int32_t on = isReuse ? 1 : 0;
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) != 0) {
         char errmsg[ERRNO_MAX_LEN] = {0};
@@ -273,7 +326,7 @@ bool SocketUtils::SetReuseAddr(int32_t fd, bool isReuse)
 
 bool SocketUtils::SetReusePort(int32_t fd, bool isReuse)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     int32_t on = isReuse ? 1 : 0;
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &on, sizeof(on)) != 0) {
         char errmsg[ERRNO_MAX_LEN] = {0};
@@ -287,7 +340,7 @@ bool SocketUtils::SetReusePort(int32_t fd, bool isReuse)
 
 bool SocketUtils::SetCloseWait(int32_t fd, int32_t second)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     linger sLinger;
     sLinger.l_onoff = (second > 0);
     sLinger.l_linger = second;
@@ -303,7 +356,7 @@ bool SocketUtils::SetCloseWait(int32_t fd, int32_t second)
 
 bool SocketUtils::SetCloExec(int32_t fd, bool isOn)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
 
     int32_t flags = fcntl(fd, F_GETFD);
     if (flags == -1) {
@@ -332,7 +385,7 @@ bool SocketUtils::SetCloExec(int32_t fd, bool isOn)
 
 bool SocketUtils::SetNoDelay(int32_t fd, bool isOn)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     int32_t on = isOn;
     if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) != 0) {
         char errmsg[ERRNO_MAX_LEN] = {0};
@@ -346,14 +399,14 @@ bool SocketUtils::SetNoDelay(int32_t fd, bool isOn)
 
 void SocketUtils::SetKeepAlive(int32_t sockfd)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     int32_t on = 1;
     setsockopt(sockfd, SOL_SOCKET, SO_KEEPALIVE, reinterpret_cast<char *>(&on), sizeof(on));
 }
 
 bool SocketUtils::SetNonBlocking(int32_t fd, bool isNonBlock, uint32_t writeTimeout)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     int32_t flags = -1;
     if (isNonBlock) {
         flags = fcntl(fd, F_SETFL, static_cast<uint32_t>(fcntl(fd, F_GETFL)) | O_NONBLOCK);
@@ -370,7 +423,7 @@ bool SocketUtils::SetNonBlocking(int32_t fd, bool isNonBlock, uint32_t writeTime
 
 bool SocketUtils::SetSendBuf(int32_t fd, int32_t size)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     if (setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &size, sizeof(size)) != 0) {
         char errmsg[ERRNO_MAX_LEN] = {0};
         strerror_r(errno, errmsg, ERRNO_MAX_LEN);
@@ -383,7 +436,7 @@ bool SocketUtils::SetSendBuf(int32_t fd, int32_t size)
 
 bool SocketUtils::SetRecvBuf(int32_t fd, int32_t size)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size)) != 0) {
         char errmsg[ERRNO_MAX_LEN] = {0};
         strerror_r(errno, errmsg, ERRNO_MAX_LEN);
@@ -396,19 +449,30 @@ bool SocketUtils::SetRecvBuf(int32_t fd, int32_t size)
 
 void SocketUtils::CloseSocket(int32_t fd)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     if (fd >= 0) {
-        SHARING_LOGD("close fd: %{public}d.", fd);
+        SHARING_LOGI("close fd: %{public}d.", fd);
+        fdsan_close_with_tag(fd, SHARING_LOG_DOMAIN);
+    }
+}
+
+void SocketUtils::ClosePeerSocket(int32_t fd)
+{
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
+    if (fd >= 0) {
+        SHARING_LOGI("close peer fd: %{public}d.", fd);
         close(fd);
     }
 }
 
 int32_t SocketUtils::SendSocket(int32_t fd, const char *buf, int32_t len)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     if (fd < 0 || buf == nullptr || len == 0) {
         return -1;
     }
+    std::string bufstr(buf);
+    NoIPLog(bufstr);
     int32_t bytes = 0;
     bool sending = true;
     while (sending) {
@@ -417,9 +481,20 @@ int32_t SocketUtils::SendSocket(int32_t fd, const char *buf, int32_t len)
             break;
         }
 
-        int32_t retCode = send(fd, &buf[bytes], len - bytes, 0);
+        int32_t retCode = send(fd, &buf[bytes], len - bytes, MSG_NOSIGNAL);
         if ((retCode < 0) && (errno == EINTR || errno == EWOULDBLOCK || errno == EAGAIN)) {
-            SHARING_LOGD("sendSocket: continue.");
+            SHARING_LOGI("sendSocket: EAGAIN, wait for writable.");
+            struct pollfd pfd[1] = {{fd, POLLOUT, 0}};
+            int pollRet = poll(pfd, 1, SEND_TIMEOUT_MS);
+            if (pollRet <= 0) {
+                SHARING_LOGE("sendSocket: poll timeout or error, return failure.");
+                break;
+            }
+            if (static_cast<unsigned short>(pfd[0].revents) & (POLLERR | POLLHUP | POLLNVAL)) {
+                SHARING_LOGE("sendSocket: poll error, revents = %{public}d.", pfd[0].revents);
+                break;
+            }
+            SHARING_LOGI("sendSocket: continue.");
             continue;
         } else if (retCode > 0) {
             bytes += retCode;
@@ -437,14 +512,16 @@ int32_t SocketUtils::SendSocket(int32_t fd, const char *buf, int32_t len)
         }
     }
 
-    SHARING_LOGD("finish! fd: %{public}d size: %{public}d.", fd, bytes);
+    SHARING_LOGI("finish! fd: %{public}d size: %{public}d.", fd, bytes);
     return bytes;
 }
 
+#ifdef WFD_SINK
 int32_t SocketUtils::Sendto(int32_t fd, const char *buf, size_t len, const char *ip, int32_t nPort)
 {
     RETURN_INVALID_IF_NULL(buf);
     RETURN_INVALID_IF_NULL(ip);
+    SHARING_LOGI("trace: \r\n%{public}s.", buf);
     struct sockaddr_in addr = {};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(nPort);
@@ -466,10 +543,11 @@ int32_t SocketUtils::Sendto(int32_t fd, const char *buf, size_t len, const char 
 
     return retCode;
 }
+#endif
 
 int32_t SocketUtils::ReadSocket(int32_t fd, char *buf, uint32_t len, int32_t &error)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     if (fd < 0 || buf == nullptr || len == 0) {
         SHARING_LOGE("invalid param!");
         return -1;
@@ -491,7 +569,7 @@ int32_t SocketUtils::ReadSocket(int32_t fd, char *buf, uint32_t len, int32_t &er
 
 int32_t SocketUtils::ReadSocket(int32_t fd, DataBuffer::Ptr buf, int32_t &error)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     if (fd < 0 || !buf) {
         SHARING_LOGE("readSocket:invalid param!");
         return -1;
@@ -524,7 +602,6 @@ int32_t SocketUtils::ReadSocket(int32_t fd, DataBuffer::Ptr buf, int32_t &error)
 
 int32_t SocketUtils::RecvSocket(int32_t fd, char *buf, uint32_t len, int32_t flags, int32_t &error)
 {
-    SHARING_LOGI("RecvSocket fd is %{public}d", fd);
     if (fd < 0 || buf == nullptr || len == 0) {
         SHARING_LOGE("invalid param.");
         return -1;
@@ -546,7 +623,7 @@ int32_t SocketUtils::RecvSocket(int32_t fd, char *buf, uint32_t len, int32_t fla
 
 int32_t SocketUtils::AcceptSocket(int32_t fd, struct sockaddr_in *clientAddr, socklen_t *addrLen)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     RETURN_INVALID_IF_NULL(clientAddr);
     RETURN_INVALID_IF_NULL(addrLen);
     int32_t clientFd = accept(fd, reinterpret_cast<struct sockaddr *>(clientAddr), addrLen);
@@ -562,7 +639,7 @@ int32_t SocketUtils::AcceptSocket(int32_t fd, struct sockaddr_in *clientAddr, so
 bool SocketUtils::GetIpPortInfo(int32_t fd, std::string &strLocalAddr, std::string &strRemoteAddr, uint16_t &localPort,
                                 uint16_t &remotePort)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     struct sockaddr_in localAddr;
     socklen_t localAddrLen = sizeof(localAddr);
     if (-1 == getsockname(fd, (struct sockaddr *)&localAddr, &localAddrLen)) {
@@ -586,7 +663,7 @@ bool SocketUtils::GetIpPortInfo(int32_t fd, std::string &strLocalAddr, std::stri
 
     localPort = ntohs(localAddr.sin_port);
     remotePort = ntohs(remoteAddr.sin_port);
-    SHARING_LOGD("localAddr: %{public}s localPort: %{public}d remoteAddr: %{public}s remotePort: %{public}d",
+    SHARING_LOGI("localAddr: %{public}s localPort: %{public}d remoteAddr: %{public}s remotePort: %{public}d",
                  GetAnonymousIp(strLocalAddr).c_str(), localPort, GetAnonymousIp(strRemoteAddr).c_str(), remotePort);
     return true;
 }

@@ -13,24 +13,67 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_SHARING_TCP_SOCKET_H
-#define OHOS_SHARING_TCP_SOCKET_H
+#ifndef OHOS_SHARING_SOCKET_UTILS_H
+#define OHOS_SHARING_SOCKET_UTILS_H
 
 #include "base_socket.h"
-
+#include "utils/data_buffer.h"
 namespace OHOS {
 namespace Sharing {
-class TcpSocket : public BaseSocket {
+constexpr int32_t DEFAULT_READ_BUFFER_SIZE = 1500;
+constexpr uint32_t SOCKET_DEFAULT_BUF_SIZE = 256 * 1024;
+constexpr uint32_t READ_BUF_SIZE = 2048;
+constexpr uint32_t MAX_READ_BUF_SIZE = 102400000;
+constexpr int32_t SEND_TIMEOUT_MS = 5000;
+class SocketUtils {
 public:
-    using Ptr = std::shared_ptr<TcpSocket>;
+#ifdef WFD_SINK
+    static bool CreateUdpSession(unsigned port, int32_t &fd);
+#endif
+    static bool CreateSocket(int32_t socketType, int32_t &fd);
+    static bool CreateTcpServer(const char *ip, unsigned port, int32_t &fd);
+    static bool CreateTcpClient(const char *ip, unsigned port, int32_t &fd, int32_t &ret);
+    
+    static bool CheckAsyncConnect(int32_t fd);
+    static bool ListenSocket(int32_t fd, uint32_t backlog = MAX_BACKLOG_NUM);
+    static bool BindSocket(int32_t fd, const std::string &host, uint16_t port);
+    static bool ConnectSocket(int32_t fd, bool isAsync, const std::string &ip, uint16_t port, int32_t &ret);
+    static bool ConnectSocket(int32_t fd, bool isAsync, const std::string &localIp, uint16_t localPort,
+                              const std::string &ip, uint16_t port, int32_t &ret);
 
-    TcpSocket();
-    ~TcpSocket() override;
+    static void SetKeepAlive(int32_t sockfd);
+    static bool SetReuseAddr(int32_t fd, bool isOn);
+    static bool SetReusePort(int32_t fd, bool isOn);
+    static bool SetCloExec(int32_t fd, bool isOn = true);
+    static bool SetNoDelay(int32_t fd, bool isOn = true);
+    static bool SetCloseWait(int32_t fd, int32_t second = 0);
+    static bool SetSendBuf(int32_t fd, int32_t size = SOCKET_DEFAULT_BUF_SIZE);
+    static bool SetRecvBuf(int32_t fd, int32_t size = SOCKET_DEFAULT_BUF_SIZE);
+    static bool SetNonBlocking(int32_t fd, bool isNonBlock = true, uint32_t write_timeout = 0);
 
-    bool Bind(const uint16_t port, const std::string &host, bool enableReuse = true,
-              uint32_t backlog = MAX_BACKLOG_NUM) override;
-    bool Connect(const std::string &peerIp, uint16_t peerPort, int32_t &retCode, bool isAsync = true,
-                 bool enableReuse = true, const std::string &localIp = "", uint16_t localPort = 0) override;
+    static int32_t ReadSocket(int32_t fd, DataBuffer::Ptr buf, int32_t &error);
+    static int32_t ReadSocket(int32_t fd, char *buf, uint32_t len, int32_t &error);
+
+    static void CloseSocket(int32_t fd);
+    static void ClosePeerSocket(int32_t fd);
+    static void ShutDownSocket(int32_t fd);
+    static bool IsUdpPortAvailable(uint16_t port);
+
+    static int32_t SendSocket(int32_t fd, const char *buf, int32_t len);
+    static int32_t AcceptSocket(int32_t fd, struct sockaddr_in *clientAddr, socklen_t *addrLen);
+    static int32_t RecvSocket(int32_t fd, char *buf, uint32_t len, int32_t flags, int32_t &error);
+#ifdef WFD_SINK
+    static int32_t Sendto(int32_t fd, const char *buf, size_t len, const char *ip, int32_t nPort);
+#endif
+
+    static uint16_t GetAvailableUdpPortPair();
+    static uint16_t GetAvailableUdpPortPair(uint16_t minPort, uint16_t maxPort);
+    static bool GetIpPortInfo(int32_t fd, std::string &strLocalAddr, std::string &strRemoteAddr, uint16_t &localPort,
+                              uint16_t &remotePort);
+
+public:
+    static uint16_t minPort_;
+    static uint16_t maxPort_;
 };
 } // namespace Sharing
 } // namespace OHOS

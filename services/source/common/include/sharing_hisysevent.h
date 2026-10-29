@@ -18,16 +18,49 @@
 
 #include <string>
 #include "common/event_comm.h"
+#include "wifi_device.h"
+#include "wifi_p2p.h"
+#include "hisysevent.h"
 
 namespace OHOS {
 namespace Sharing {
-constexpr char WFD_SOURCE[] = "wfdSourceSession";
-constexpr char P2P_PKG[] = "WIFI_P2P";
-enum class BIZSceneType : int32_t {
-    WFD_SOURCE_PLAY,
-    P2P_START_DISCOVERY,
-    P2P_CONNECT_DEVICE,
-    P2P_DISCONNECT_DEVICE,
+
+constexpr char DOMAIN_WIFI_DISPLAY[] = "WIFI_DISPLAY";
+inline const std::string EVENT_NAME = "MIRACAST_PROJECTION_BEHAVIOR";
+inline const std::string PKG_SHARING = "sharing_service";
+inline const std::string HOST_PKG_SHARING = "cast_engine_service";
+const HiviewDFX::HiSysEvent::EventType EVENT_TYPE = HiviewDFX::HiSysEvent::EventType::BEHAVIOR;
+
+enum class BizScene : int32_t {
+    DISCOVERY = 1,
+    CONNECTION = 2,
+    DISCONNECTION = 3,
+};
+
+enum class DiscoveryStage : int32_t {
+    S1_START_DISCOVERY = 1,
+    S2_FIRST_DEVICE = 2,
+    S3_STOP_DISCOVERY = 3,
+};
+
+enum class ConnectionStage : int32_t {
+    S1_P2P_CONNECTION = 1,
+    S2_TCP_SERVER = 2,
+    S3_M1_STAGE = 3,
+    S4_M2_STAGE = 4,
+    S5_M3_STAGE = 5,
+    S6_M4_STAGE = 6,
+    S7_M5_STAGE = 7,
+    S8_M6_STAGE = 8,
+    S9_M7_STAGE = 9,
+    S10_CREATE_ENCODER = 10,
+    S11_VTP_OR_UDP_CONNECTION = 11,
+    S12_SEND_STREAM = 12,
+};
+
+enum class DisconnectionStage : int32_t {
+    S1_START_DISCONNECTION = 1,
+    S2_DISCONNECTION_COMPLETED = 2,
 };
 
 enum class StageResType : int32_t {
@@ -40,69 +73,37 @@ enum class StageResType : int32_t {
 
 enum class BIZStateType : int32_t {
     BIZ_STATE_BEGIN = 1,
-    BIZ_STATE_END,
-    BIZ_STATE_IDLE,
+    BIZ_STATE_END = 2,
+    BIZ_STATE_CANCEL = 3,
 };
 
-enum class BIZSceneStage : int32_t {
-    // scene5
-    WFD_SOURCE_PLAY_TCP_SERVER = 1,
-    WFD_SOURCE_PLAY_SEND_M1_REQ, // OPTIONS
-    WFD_SOURCE_PLAY_RECV_M1_RSP,
-    WFD_SOURCE_PLAY_RECV_M2_REQ, // OPTIONS
-    WFD_SOURCE_PLAY_SEND_M2_RSP,
-    WFD_SOURCE_PLAY_SEND_M3_REQ, // GET_PARAMETER
-    WFD_SOURCE_PLAY_RECV_M3_RSP,
-    WFD_SOURCE_PLAY_SEND_M4_REQ, // SET_PARAMETER
-    WFD_SOURCE_PLAY_RECV_M4_RSP,
-    WFD_SOURCE_PLAY_SEND_M5_REQ, // SET_PARAMETER wfd_trigger_method: SETUP
-    WFD_SOURCE_PLAY_RECV_M5_RSP,
-    WFD_SOURCE_PLAY_RECV_M6_REQ, // SETUP
-    WFD_SOURCE_PLAY_SEND_M6_RSP,
-    WFD_SOURCE_PLAY_RECV_M7_REQ, // PLAY
-    WFD_SOURCE_PLAY_SEND_M7_RSP,
-    WFD_SOURCE_PLAY_RECV_M8_REQ, // TEARDOWN
-    WFD_SOURCE_PLAY_SEND_M8_RSP,
-    // scene2  P2P_START_DISCOVERY
-    P2P_START_DISCOVERY = 1,
-    P2P_DEVICE_FOUND,
-    // scene P2P_CONNECT_DEVICE
-    P2P_CONNECT_DEVICE = 1,
-
-    // scene P2P_DISCONNECT_DEVICE
-    P2P_DISCONNECT_DEVICE = 1,
-
-    WFD_SOURCE_SCENE_REMOVE_DEVICE,
-    WFD_SOUCE_SCENE_STOP_DISCOVERY,
-};
-
-enum class BlzErrorCode : int32_t {
-    ERROR_NONE = 0,
-    ERROR_FAIL,
-};
-
-class SharingHiSysEvent {
+class SharingHisysevent {
 public:
-    using Ptr = std::shared_ptr<SharingHiSysEvent>;
-    explicit SharingHiSysEvent(BIZSceneType scene, std::string callPkg);
-    ~SharingHiSysEvent();
-    void ReportStart(std::string funcName, BIZSceneStage stage);
-    void ReportEnd(std::string funcName, BIZSceneStage stage, BlzErrorCode error = BlzErrorCode::ERROR_NONE);
-    void Report(std::string funcName, BIZSceneStage stage, StageResType resType = StageResType::STAGE_RES_SUCCESS,
-                std::string peerMac = "");
-    void SetCallPkg(const std::string callPkg);
-    void SetLocalMac(const std::string mac);
-    void SetPeerMac(const std::string mac);
-    void ChangeScene(BIZSceneType scene);
-    int32_t GetScene() const;
+    SharingHisysevent(const SharingHisysevent &) = delete;
+    SharingHisysevent &operator=(const SharingHisysevent &) = delete;
+
+    static SharingHisysevent &GetInstance()
+    {
+        static SharingHisysevent instance{};
+        return instance;
+    }
+
+    struct HisyseventInfo {
+        std::string func = "";
+        std::string toCallpkg = "";
+        ConnectionStage stage = ConnectionStage::S1_P2P_CONNECTION;
+        StageResType stageRes = StageResType::STAGE_RES_UNKNOWN;
+        std::string deviceName = "";
+        std::string deviceType = "";
+    };
+
+    bool GetWifiLinkedInfo(Wifi::WifiLinkedInfo& wifiInfo);
+    bool GetP2pGroupInfo(Wifi::WifiP2pGroupInfo& groupInfo);
+    void ReportFrequency(const HisyseventInfo& hisyseventInfo);
 
 private:
-    int32_t bizScene_ = 0;
-    std::string toCallPkg_ = "";
-    std::string localMac_ = "";
-    std::string peerMac_ = "";
-    BIZSceneStage lastStage_;
-    bool sceneDisposed = false;
+    SharingHisysevent() = default;
+    ~SharingHisysevent() = default;
 };
 
 } // namespace Sharing

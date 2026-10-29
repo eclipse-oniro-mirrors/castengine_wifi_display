@@ -86,15 +86,21 @@ private:
 };
 
 unsigned long long GetThreadId();
+void SetThreadPriority(int threadId, int prio);
 uint64_t GetCurrentMillisecond();
 
+#ifdef WFD_SINK
 std::string ChangeCase(const std::string &value, bool lowerCase);
+#endif
 std::string Trim(std::string &&s, const std::string &chars = " \r\n\t");
 std::string &Trim(std::string &s, const std::string &chars = " \r\n\t");
 
 std::vector<std::string> Split(const std::string &s, const char *delim);
+#ifdef WFD_SINK
 std::vector<std::string> SplitOnce(const std::string &s, const char *delim);
+#endif
 
+#ifdef WFD_SINK
 uint16_t SwapEndian16(uint16_t value);
 uint32_t SwapEndian32(uint32_t value);
 uint64_t SwapEndian64(uint64_t value);
@@ -107,10 +113,13 @@ uint64_t LoadBE64(const uint8_t *p);
 void SetBE24(void *p, uint32_t val);
 void SetBE32(void *p, uint32_t val);
 void SetLE32(void *p, uint32_t val);
+#endif
 
 std::string GetAnonyDevName(const std::string &value);
 std::string GetAnonyString(const std::string &value);
 std::string GetLocalP2pAddress(const std::string &interface);
+
+void NoIPLog(const std::string &buf, bool isCommLog = false);
 std::string GetAnonymousIp(const std::string &ip);
 std::string GetAnonymousMAC(const std::string &mac);
 std::string GetAnonymousDeviceId(const std::string &deviceId);

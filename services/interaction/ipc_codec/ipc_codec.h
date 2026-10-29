@@ -18,11 +18,12 @@
 
 #include "iremote_object.h"
 #include "message_parcel.h"
+#include "common/const_def.h"
+#include "common/sharing_log.h"
 
 namespace OHOS {
 namespace Sharing {
 namespace IPC_CODEC {
-constexpr int32_t DEVICE_LIST_MAX_SIZE = 1000;
 
 bool IpcEncodeBindAttr(MessageParcel &pIpcMsg, bool attr);
 bool IpcEncodeBindAttr(MessageParcel &pIpcMsg, int8_t attr);
@@ -91,10 +92,16 @@ template <typename TYPE>
 bool IpcDecodeBindAttr(MessageParcel &pIpcMsg, std::vector<TYPE> &vec)
 {
     int32_t size;
-    IpcDecodeBindAttr(pIpcMsg, size);
-    if (size < 0 || size > DEVICE_LIST_MAX_SIZE) {
+    if (!IpcDecodeBindAttr(pIpcMsg, size)) {
+        SHARING_LOGE("data size read fail");
         return false;
     }
+
+    if (size > DEVICE_LIST_MAX_SIZE) {
+        SHARING_LOGE("data size more than max size!");
+        return false;
+    }
+
     vec.resize(size);
 
     for (int i = 0; i < size; i++) {

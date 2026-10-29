@@ -33,12 +33,9 @@ namespace Sharing {
 
 static constexpr OHOS::HiviewDFX::HiLogLabel SHARING_LABEL = {LOG_CORE, SHARING_LOG_DOMAIN, SHARING_LOG_TAG};
 
-#define R_FILENAME (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
-
 #define SHARING_LOG(func, fmt, args...)                                                                            \
-    do {                                                                                                             \
-        (void)func(SHARING_LABEL, "[Sharing][%{public}s()][%{public}s:%{public}d] " fmt, __FUNCTION__, R_FILENAME,   \
-                   __LINE__, ##args);                                                                                \
+    do {                                                                                                           \
+        (void)func(SHARING_LABEL, "[%{public}s]" fmt, __FILE_NAME__, ##args);                                      \
     } while (0)
 
 #define SHARING_LOGD(fmt, ...) SHARING_LOG(OHOS::HiviewDFX::HiLog::Debug, fmt, ##__VA_ARGS__)
@@ -63,6 +60,7 @@ static constexpr OHOS::HiviewDFX::HiLogLabel SHARING_LABEL = {LOG_CORE, SHARING_
         }                                                                            \
     } while (0)
 
+#undef CHECK_AND_RETURN_RET_LOG
 #define CHECK_AND_RETURN_RET_LOG(cond, ret, fmt, ...) \
     do {                                              \
         if (!(cond)) {                                \
@@ -71,6 +69,7 @@ static constexpr OHOS::HiviewDFX::HiLogLabel SHARING_LABEL = {LOG_CORE, SHARING_
         }                                             \
     } while (0)
 
+#undef CHECK_AND_RETURN_LOG
 #define CHECK_AND_RETURN_LOG(cond, fmt, ...)  \
     do {                                      \
         if (!(cond)) {                        \

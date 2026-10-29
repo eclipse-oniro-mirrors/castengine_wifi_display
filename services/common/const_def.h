@@ -94,16 +94,18 @@ constexpr uint32_t DEFAULT_WINDOW_WIDTH = 1920;
 constexpr uint32_t DEFAULT_WINDOW_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_CAPTURE_VIDEO_WIDTH = 1280;
 constexpr uint32_t DEFAULT_CAPTURE_VIDEO_HEIGHT = 720;
-constexpr uint32_t DEFAULT_FRAME_RATE = 30;
+constexpr double HIVISION_FRAME_RATE = 60.0;
+constexpr double DEFAULT_FRAME_RATE = 30.0;
 constexpr uint32_t DEFAULT_SAMPLE_BIT = 16;
 
 constexpr int32_t MAX_CONTEXT_NUM = 20;
 constexpr int32_t MAX_SRC_AGENT_NUM = 20;
 constexpr int32_t MAX_SINK_AGENT_NUM = 20;
-constexpr int64_t MAX_YUV420_BUFFER_SIZE = 2560 * 1600 * (3 / 2) * 2;
+constexpr uint32_t MAX_YUV420_BUFFER_SIZE = 2560 * 1600 * (3 / 2) * 2;
 constexpr int32_t MAX_RTSP_PLAYER_NUM = 2;
 
-constexpr int32_t SCREEN_CAPTURE_ENCODE_BITRATE = 2000000;
+constexpr int64_t SCREEN_CAPTURE_ENCODE_BITRATE = 5 * 1000 * 1000;
+constexpr int64_t HIVISION_ENCODE_BITRATE = 8 * 1000 * 1000;
 constexpr uint64_t SCREEN_ID_INVALID = -1ULL;
 constexpr float DEFAULT_SCREEN_DENSITY = 2.0;
 constexpr int32_t DEFAULT_SCREEN_FLAGS = 0;
@@ -111,6 +113,16 @@ constexpr int32_t DEFAULT_SCREEN_FLAGS = 0;
 const std::string DUMMY_EMPTY = "";
 
 constexpr int32_t MAX_RTP_PAYLOAD_SIZE = 1316;
+constexpr uint32_t BITRATE_MODE_VBR = 1;
+constexpr int32_t INITIAL_MAX_QP_HISI = 37;
+constexpr int32_t INITIAL_MIN_QP_HISI = 23;
+constexpr int32_t MILLISECOND = 1000;
+constexpr int32_t REPEAT_DIFF = 16;
+constexpr int32_t REPEAT_DIFF_HIVISION = 8;
+constexpr uint64_t FRAME_RATE_30 = 30;
+constexpr uint64_t FRAME_RATE_60 = 60;
+ 	 
+inline constexpr char PARAM_MEDIA_DUMP[] = "debug.cast.media.dump";
 
 enum TrackType { TRACK_INVALID = -1, TRACK_VIDEO = 0, TRACK_AUDIO, TRACK_TITLE, TRACK_APPLICATION, TRACK_MAX };
 

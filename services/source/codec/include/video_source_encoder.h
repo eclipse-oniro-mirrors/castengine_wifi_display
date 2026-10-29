@@ -20,6 +20,7 @@
 #include "common/const_def.h"
 #include "protocol/frame/frame.h"
 #include "utils/data_buffer.h"
+#include "parameters.h"
 
 namespace OHOS {
 namespace Sharing {
@@ -35,12 +36,17 @@ public:
     uint32_t screenHeight_ = DEFAULT_VIDEO_HEIGHT;
     uint32_t videoWidth_ = DEFAULT_VIDEO_WIDTH;
     uint32_t videoHeight_ = DEFAULT_VIDEO_HEIGHT;
-    uint32_t frameRate_ = DEFAULT_FRAME_RATE;
 
     int32_t codecType_ = CodecId::CODEC_H264;
     int32_t pixleFormat_ = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
 
+    double frameRate_ = DEFAULT_FRAME_RATE;
+
     uint64_t srcScreenId_ = 0;
+    int32_t dpi_ = 0;
+    int32_t mode_ = 0;
+    bool isPc_ = false;
+    std::string serialNumber_ = "";
 };
 
 class VideoSourceEncoderListener {
@@ -67,6 +73,18 @@ public:
         std::weak_ptr<VideoSourceEncoder> parent_;
     };
 
+    class VideoEncodeParameterCallback : public OHOS::MediaAVCodec::MediaCodecParameterWithAttrCallback  {
+    public:
+        VideoEncodeParameterCallback(std::shared_ptr<VideoSourceEncoder> parent) : parent_(parent) {}
+        ~VideoEncodeParameterCallback() = default;
+        
+        void OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<MediaAVCodec::Format> attribute,
+            std::shared_ptr<MediaAVCodec::Format> parameter) override;
+
+        private:
+        std::weak_ptr<VideoSourceEncoder> parent_;
+    };
+
     VideoSourceEncoder(std::shared_ptr<VideoSourceEncoderListener> listener) : listener_(listener){};
     ~VideoSourceEncoder();
 
@@ -76,7 +94,9 @@ public:
     bool InitEncoder(const VideoSourceConfigure &configure);
 
     sptr<Surface> &GetEncoderSurface();
-
+    void UpdateBitrate(int64_t bitrate);
+    void RequestKeyFrame();
+    bool IsNeedDropFrame();
 protected:
     void OnOutputFormatChanged(const MediaAVCodec::Format &format);
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode);
@@ -89,10 +109,25 @@ private:
     bool ConfigEncoder(const VideoSourceConfigure &configure);
 
 private:
+    bool isMediaDumpEnable_ = false;
+    FILE *dumpFp_ = nullptr;
     sptr<OHOS::Surface> videoEncoderSurface_;
     std::shared_ptr<VideoEncodeCallback> encoderCb_;
+    std::shared_ptr<VideoEncodeParameterCallback> parameterCb_;
     std::weak_ptr<VideoSourceEncoderListener> listener_;
     std::shared_ptr<OHOS::MediaAVCodec::AVCodecVideoEncoder> videoEncoder_;
+    std::unique_ptr<uint8_t[]> spsBuffer_ = nullptr;
+    uint32_t spsBufferSize_ = 0;
+    int32_t codecType_ = CodecId::CODEC_H264;
+
+    bool isHiVisionScreen_ = false;
+    bool firstFrame_ = true;
+    uint64_t lastPts_ = 0;
+    uint64_t currentIndex_ = 0;
+    uint64_t frameCount_ = 0;
+    uint64_t callbackCount_ = 0;
+    uint64_t currentSecond_ = 0;
+    std::chrono::steady_clock::time_point start_ = std::chrono::steady_clock::now();
 };
 } // namespace Sharing
 } // namespace OHOS

@@ -1,17 +1,17 @@
 /*
- * Copyright (c) 2024 Shenzhen Kaihong Digital Industry Development Co., Ltd.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+* Copyright (c) 2024 Shenzhen Kaihong Digital Industry Development Co., Ltd.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 #include "audio_pcm_processor.h"
 #include "const_def.h"
@@ -26,9 +26,7 @@ constexpr uint32_t FIFO_SAMPLES = 3840;
 constexpr uint8_t AUDIO_SAMPLING_FREQUENCY_48K = 2 << 3;
 constexpr uint8_t NUMBER_OF_AUDIO_CHANNEL_STEREO = 1;
 
-static std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-static uint64_t duration = 0;
-static uint8_t data[LPCM_PES_PAYLOAD_DATA_SIZE];
+static std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
 AudioPcmProcessor::AudioPcmProcessor()
 {
@@ -56,13 +54,14 @@ int32_t AudioPcmProcessor::Init(uint32_t channels, uint32_t sampleBit, uint32_t 
         SHARING_LOGE("Could not allocate FIFO");
         return 1;
     }
+    data_ = std::make_unique<uint8_t[]>(LPCM_PES_PAYLOAD_DATA_SIZE);
     return 0;
 }
 
 void AudioPcmProcessor::OnFrame(const Frame::Ptr &frame)
 {
-    if (frame == nullptr) {
-        SHARING_LOGE("frame is nullptr!");
+    if (frame == nullptr || fifo_ == nullptr) {
+        SHARING_LOGE("frame or fifo is nullptr!");
         return;
     }
 
@@ -71,14 +70,14 @@ void AudioPcmProcessor::OnFrame(const Frame::Ptr &frame)
         return;
     }
 
-    if (duration == 0) {
-        std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-        duration = (uint64_t)std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+    if (duration_ == 0) {
+        std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+        duration_ = (uint64_t)std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
     }
 
     PcmLittleToBigEndian(frame->Data(), frame->Size());
     uint8_t *captureData[] = {frame->Data()};
-    uint8_t *payloadData[] = {data};
+    uint8_t *payloadData[] = {data_.get()};
     if (sampleSize_ == 0) {
         return;
     }
@@ -90,7 +89,7 @@ void AudioPcmProcessor::OnFrame(const Frame::Ptr &frame)
         if (pcmFrame == nullptr) {
             continue;
         }
-        pcmFrame->pts_ = duration;
+        pcmFrame->pts_ = duration_;
         pcmFrame->codecId_ = CODEC_PCM;
         pcmFrame->SetCapacity(LPCM_PES_PAYLOAD_PRIVATE_SIZE + LPCM_PES_PAYLOAD_DATA_SIZE);
         pcmFrame->Append(0xa0);          // 0xa0 - sub_stream_id
@@ -99,7 +98,7 @@ void AudioPcmProcessor::OnFrame(const Frame::Ptr &frame)
         pcmFrame->Append(AUDIO_SAMPLING_FREQUENCY_48K | NUMBER_OF_AUDIO_CHANNEL_STEREO);
         pcmFrame->Append(payloadData[0], LPCM_PES_PAYLOAD_DATA_SIZE);
         DeliverFrame(pcmFrame);
-        duration += LPCM_PES_PAYLOAD_TIME_DURATION;
+        duration_ += LPCM_PES_PAYLOAD_TIME_DURATION;
     }
 }
 
@@ -112,15 +111,17 @@ void AudioPcmProcessor::PcmLittleToBigEndian(uint8_t *data, int32_t size)
     if (sampleSize <= 1) {
         return;
     }
+    if (sampleSize == 0 || size < sampleSize) {
+        SHARING_LOGE("sampleSize: %{public}d, size: %{public}d.", sampleSize, size);
+        return;
+    }
 
     uint8_t tmpData;
-    if (sampleSize != 0) {
-        int32_t count = size / sampleSize;
-        for (int32_t i = 0; i < count; i++) {
-            tmpData = data[i * sampleSize];
-            data[i * sampleSize] = data[i * sampleSize + 1];
-            data[i * sampleSize + 1] = tmpData;
-        }
+    int32_t count = size / sampleSize;
+    for (int32_t i = 0; i < count; i++) {
+        tmpData = data[i * sampleSize];
+        data[i * sampleSize] = data[i * sampleSize + 1];
+        data[i * sampleSize + 1] = tmpData;
     }
 }
 } // namespace Sharing

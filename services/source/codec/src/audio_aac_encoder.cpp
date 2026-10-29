@@ -47,7 +47,7 @@ constexpr uint32_t ADTS_HEADER_INDEX_4 = 4;
 constexpr uint32_t ADTS_HEADER_INDEX_5 = 5;
 constexpr uint32_t ADTS_HEADER_INDEX_6 = 6;
 
-static std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+static std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 static uint64_t duration = 0;
 
 AudioAACEncoder::AudioAACEncoder()
@@ -99,6 +99,10 @@ int AudioAACEncoder::InitSwr()
         in_sample_fmt = AV_SAMPLE_FMT_U8;
     }
     int in_sample_rate = (int)inSampleRate_;
+    if (!enc_) {
+        SHARING_LOGE("audio codec context is nullptr");
+        return -1;
+    }
     AVChannelLayout in_av_ch_layout;
     int ret = av_channel_layout_from_mask(&in_av_ch_layout, in_ch_layout);
     CHECK_AND_RETURN_RET_LOG(!ret, -1, "channel layout is not supported.");
@@ -106,6 +110,7 @@ int AudioAACEncoder::InitSwr()
         &in_av_ch_layout, in_sample_fmt, in_sample_rate, 0, NULL);
     if (!swr_ || ret) {
         SHARING_LOGE("alloc swr failed.");
+        return -1;
     }
 
     int error;
@@ -113,16 +118,19 @@ int AudioAACEncoder::InitSwr()
     if ((error = swr_init(swr_)) < 0) {
         SHARING_LOGE("open swr(%{public}d:%{public}s)", error,
                      av_make_error_string(errBuf, AV_ERROR_MAX_STRING_SIZE, error));
+        return -1;
     }
 
     if (!(swrData_ = (uint8_t **)calloc(enc_->ch_layout.nb_channels, sizeof(*swrData_)))) {
         SHARING_LOGE("alloc swr buffer failed!");
+        return -1;
     }
 
     if ((error = av_samples_alloc(swrData_, NULL, enc_->ch_layout.nb_channels,
         enc_->frame_size, enc_->sample_fmt, 0)) < 0) {
         SHARING_LOGE("alloc swr buffer(%{public}d:%{public}s)\n", error,
                      av_make_error_string(errBuf, AV_ERROR_MAX_STRING_SIZE, error));
+        return -1;
     }
 
     return 0;
@@ -148,7 +156,6 @@ void AudioAACEncoder::InitEncPacket()
 
 int32_t AudioAACEncoder::Init(uint32_t channels, uint32_t sampleBit, uint32_t sampleRate)
 {
-    SHARING_LOGD("trace.");
     inChannels_ = channels;
     inSampleBit_ = sampleBit;
     inSampleRate_ = sampleRate;
@@ -168,6 +175,7 @@ int32_t AudioAACEncoder::Init(uint32_t channels, uint32_t sampleBit, uint32_t sa
 
     if (avcodec_open2(enc_, codec, NULL) < 0) {
         SHARING_LOGE("Could not open codec");
+        return 1;
     }
 
     encFrame_ = av_frame_alloc();
@@ -298,7 +306,6 @@ void AudioAACEncoder::DoSwr(const Frame::Ptr &frame)
         if ((error = frame_size) < 0) {
             SHARING_LOGE("Could not convert input samples(%{public}d:%{public}s)", error,
                          av_make_error_string(errBuf, AV_ERROR_MAX_STRING_SIZE, error));
-            break;
         }
 
         in_sample[0] = NULL;
@@ -309,18 +316,24 @@ void AudioAACEncoder::DoSwr(const Frame::Ptr &frame)
     } while (swr_get_out_samples(swr_, in_samples) >= enc_->frame_size);
 }
 
+void AudioAACEncoder::SetDuration()
+{
+    if (duration == 0) {
+        std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+        duration = (uint64_t)std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+    }
+}
+
 void AudioAACEncoder::OnFrame(const Frame::Ptr &frame)
 {
     RETURN_IF_NULL(frame);
-    if (duration == 0) {
-        std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-        duration = (uint64_t)std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
-    }
-
+    SetDuration();
     int error = 0;
-    if ((error = InitSwr()) != 0 && !swr_) {
-        SHARING_LOGE("resample init failed!");
-        return;
+    if (!swr_) {
+        if ((error = InitSwr()) != 0) {
+            SHARING_LOGE("resample init failed!");
+            return;
+        }
     }
     DoSwr(frame);
 
@@ -347,6 +360,7 @@ void AudioAACEncoder::OnFrame(const Frame::Ptr &frame)
                 break;
             } else if (error < 0) {
                 SHARING_LOGE("recv failed:%{public}s", av_make_error_string(errBuf, AV_ERROR_MAX_STRING_SIZE, error));
+                break;
             }
 
             encPacket_->dts = av_rescale(encPacket_->dts, 1000, enc_->time_base.den); // rescale time base 1000.

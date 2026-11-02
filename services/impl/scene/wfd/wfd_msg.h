@@ -17,6 +17,7 @@
 #define OHOS_SHARING_WFD_MSG_H
 
 #include "common/const_def.h"
+#include "common/event_comm.h"
 #include "interaction/ipc_codec/ipc_msg.h"
 #include "iremote_object.h"
 

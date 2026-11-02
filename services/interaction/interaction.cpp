@@ -360,6 +360,12 @@ int32_t Interaction::AppendSurface(uint32_t contextId, uint32_t agentId, sptr<Su
                           });
 }
 
+int32_t Interaction::SetAudioEnable(uint32_t contextId, uint32_t agentId, bool isEnable)
+{
+    return SendAgentEvent(contextId, agentId, EventType::EVENT_AGENT_SET_AUDIO_ENABLE,
+                          [this, isEnable](auto &msg) { msg->isAudioEnable = isEnable; });
+}
+
 int32_t Interaction::RemoveSurface(uint32_t contextId, uint32_t agentId, uint64_t surfaceId)
 {
     return SendAgentEvent(contextId, agentId, EventType::EVENT_AGENT_CHANNEL_REMOVESURFACE,

@@ -53,7 +53,9 @@ enum WfdMsgId {
     WFD_GET_BOUND_DEVICES_REQ,
     WFD_GET_BOUND_DEVICES_RSP,
     WFD_DELETE_BOUND_DEVICE_REQ,
-    WFD_IS_PC_SOURCE_MSG
+    WFD_IS_PC_SOURCE_MSG,
+    WFD_AUDIO_ENABLE_REQ,
+    WFD_AUDIO_ON_INTERRUPT_MSG
     // domain msg
 };
 
@@ -572,6 +574,39 @@ struct WfdIsPcSourceMsg : public BaseMsg {
     }
 
     IPC_BIND_ATTR0
+};
+
+struct WfdAudioEnableReq : public BaseMsg {
+    enum { MSG_ID = WfdMsgId::WFD_AUDIO_ENABLE_REQ };
+
+    int32_t GetMsgId() final { return MSG_ID; }
+    WfdAudioEnableReq() = default;
+    explicit WfdAudioEnableReq(const WfdAudioEnableReq &rReq){};
+    WfdAudioEnableReq &operator=(const WfdAudioEnableReq &rReq)
+    {
+        if (this != &rReq) {
+            this->isEnable = rReq.isEnable;
+            this->deviceId = rReq.deviceId;
+        }
+
+        return *this;
+    }
+
+    IPC_BIND_ATTR(isEnable, deviceId)
+
+    bool isEnable;
+    std::string deviceId;
+};
+
+struct WfdAudioOnInterruptMsg : public BaseMsg {
+    enum { MSG_ID = WfdMsgId::WFD_AUDIO_ON_INTERRUPT_MSG };
+
+    int32_t GetMsgId() final { return MSG_ID; }
+    WfdAudioOnInterruptMsg() = default;
+
+    IPC_BIND_ATTR(audioInterruptEvent)
+
+    AudioInterruptEvent audioInterruptEvent;
 };
 
 } // namespace Sharing

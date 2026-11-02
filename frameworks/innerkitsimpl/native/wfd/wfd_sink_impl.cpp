@@ -440,5 +440,25 @@ int32_t WfdSinkImpl::DeleteBoundDevice(std::string &deviceAddress)
     return replyMsg->ret;
 }
 
+int32_t WfdSinkImpl::SetAudioEnable(const std::string &deviceId, bool isEnable)
+{
+    SHARING_LOGI("SetAudioEnable, isEnable:%{public}d", isEnable);
+    auto ipcAdapter = ipcAdapter_.lock();
+    RETURN_INVALID_IF_NULL(ipcAdapter);
+    auto msg = std::make_shared<WfdAudioEnableReq>();
+    RETURN_INVALID_IF_NULL(msg);
+    msg->isEnable = isEnable;
+    msg->deviceId = deviceId;
+    auto reply = std::static_pointer_cast<BaseMsg>(std::make_shared<WfdCommonRsp>());
+    RETURN_INVALID_IF_NULL(reply);
+    auto ret = ipcAdapter->SendRequest(msg, reply);
+    if (ret != 0) {
+        SHARING_LOGE("ipc SetAudioEnable failed: %{public}d.", ret);
+        return ret;
+    }
+    auto replyMsg = std::static_pointer_cast<WfdCommonRsp>(reply);
+    return replyMsg->ret;
+}
+
 } // namespace Sharing
 } // namespace OHOS

@@ -46,6 +46,7 @@ bool MediaController::Init(AudioTrack audioTrack, VideoTrack videoTrack, bool is
     SHARING_LOGD("trace.");
     audioTrack_ = audioTrack;
     videoTrack_ = videoTrack;
+    isPcSource_ = isPcSource;
     if (CODEC_NONE == audioTrack_.codecId && CODEC_NONE == videoTrack_.codecId) {
         SHARING_LOGW("no need to play.");
         return false;
@@ -57,6 +58,7 @@ bool MediaController::Init(AudioTrack audioTrack, VideoTrack videoTrack, bool is
             SHARING_LOGE("audio play init error.");
             return false;
         }
+        audioPlayController_->SetMediaController(shared_from_this());
     }
     videoAudioSync_ = std::make_shared<VideoAudioSync>();
     if (nullptr != videoAudioSync_) {
@@ -267,10 +269,77 @@ void MediaController::SetKeyRedirect(uint64_t surfaceId, bool keyRedirect)
     }
 }
 
+bool MediaController::ReleaseAudioPlay()
+{
+    if (!audioPlayController_) {
+        SHARING_LOGW("audio controller already null");
+        return true;
+    }
+    SHARING_LOGI("release audio controller in");
+    auto mediaChannel = mediaChannel_.lock();
+    RETURN_FALSE_IF_NULL(mediaChannel);
+    auto dispatcher = mediaChannel->GetDispatcher();
+    RETURN_FALSE_IF_NULL(dispatcher);
+    {
+        std::lock_guard<std::mutex> lock(playAudioMutex_);
+        audioPlayController_->Stop(dispatcher);
+        audioPlayController_->Release();
+        audioPlayController_.reset();
+    }
+    if (nullptr != videoAudioSync_) {
+        videoAudioSync_->SetAudioPlayController(nullptr);
+    }
+    SHARING_LOGI("release audio controller end");
+    return true;
+}
+
+bool MediaController::RestartAudioPlay()
+{
+    SHARING_LOGI("restart audio controller in");
+    if (audioPlayController_) {
+        ReleaseAudioPlay();
+    }
+    
+    auto mediaChannel = mediaChannel_.lock();
+    RETURN_FALSE_IF_NULL(mediaChannel);
+    auto dispatcher = mediaChannel->GetDispatcher();
+    RETURN_FALSE_IF_NULL(dispatcher);
+    {
+        std::lock_guard<std::mutex> lock(playAudioMutex_);
+        audioPlayController_ = std::make_shared<AudioPlayController>(mediachannelId_);
+        bool ret = audioPlayController_->Init(audioTrack_, isPcSource);
+        if (!ret) {
+            SHARING_LOGE("audio controller init error.");
+            audioPlayController_.reset();
+            return false;
+        }
+        audioPlayController_->SetMediaController(shared_from_this());
+        ret = audioPlayController_->Start(dispatcher);
+        if (!ret) {
+            SHARING_LOGE("audio controller start error.");
+            audioPlayController_.reset();
+            return false;
+        }
+
+        if (nullptr != videoAudioSync_) {
+            videoAudioSync_->SetAudioPlayController(audioPlayController_);
+        }
+    }
+   
+    SHARING_LOGI("restart audio controller end");
+    return true;
+}
+
 void MediaController::OnPlayControllerNotify(ProsumerStatusMsg::Ptr &statusMsg)
 {
     SHARING_LOGD("trace.");
     RETURN_IF_NULL(statusMsg);
+    if (statusMsg->audioInterruptEvent.forceType == AudioStandard::InterruptForceType::INTERRUPT_FORCE &&
+        statusMsg->audioInterruptEvent.hintType == AudioStandard::InterruptHint::INTERRUPT_HINT_STOP) {
+        SHARING_LOGI("on audio interrupt force stop");
+        ReleaseAudioPlay();
+    }
+
     auto mediaChannel = mediaChannel_.lock();
     RETURN_IF_NULL(mediaChannel);
 

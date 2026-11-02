@@ -47,6 +47,7 @@ public:
     virtual int32_t SetMediaFormat(std::string deviceId, CodecAttr videoAttr, CodecAttr audioAttr) = 0;
     virtual int32_t GetBoundDevicesList(std::vector<BoundDeviceInfo> &devices) = 0;
     virtual int32_t DeleteBoundDevice(std::string &deviceAddress) = 0;
+    virtual int32_t SetAudioEnable(const std::string &deviceId, bool isEnable) = 0;
 };
 
 class __attribute__((visibility("default"))) WfdSinkFactory {

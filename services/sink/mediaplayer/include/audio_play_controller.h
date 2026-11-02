@@ -28,6 +28,8 @@
 namespace OHOS {
 namespace Sharing {
 
+class MediaController;
+
 class AudioPlayController {
 public:
     explicit AudioPlayController(uint32_t mediaChannelId);
@@ -40,13 +42,15 @@ public:
     bool Init(AudioTrack &audioTrack, bool isPcSource);
     bool Start(BufferDispatcher::Ptr &dispatcher);
     int64_t GetAudioDecoderTimestamp();
-    void SetAudioFocusState(bool hasFocus);
+    void HandleAudioOnInterrupt(AudioInterruptEvent &audioInterruptEvent);
+    void SetMediaController(std::shared_ptr<MediaController> mediaController);
 
 protected:
     void StopAudioThread();
     void AudioPlayThread();
     void StartAudioThread();
     void OnAudioFocusTimeout();
+    void NotifyAudioOnInterrupt(AudioInterruptEvent &audioInterruptEvent);
 
 private:
     static constexpr int64_t AUDIO_FOCUS_TIMEOUT_SEC = 10;
@@ -60,6 +64,7 @@ private:
 
     std::atomic_bool hasAudioFocus_ = true;
     TimeoutTimer focusTimer_;
+    std::weak_ptr<MediaController> mediaController_;
 };
 
 } // namespace Sharing

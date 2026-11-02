@@ -108,7 +108,8 @@ public:
     int32_t RemoveSurface(uint32_t contextId, uint32_t agentId, uint64_t surfaceId) override;
     int32_t AppendSurface(uint32_t contextId, uint32_t agentId, sptr<Surface> surface,
                           SceneType sceneType = FOREGROUND) override;
-
+    int32_t SetAudioEnable(uint32_t contextId, uint32_t agentId, bool isEnable) override;
+    
     // impl ISharing about window
     int32_t DestroyWindow(int32_t windowId) override;
     int32_t CreateWindow(int32_t &windowId, WindowProperty &windowProperty) override;

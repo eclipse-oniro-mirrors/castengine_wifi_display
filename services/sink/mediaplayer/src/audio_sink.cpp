@@ -33,19 +33,6 @@ AudioSink::~AudioSink()
     SHARING_LOGD("renderthread release success,playerId: %{public}u.", playerId_);
 }
 
-int32_t AudioSink::Prepare()
-{
-    SHARING_LOGD("playerId: %{public}u.", playerId_);
-    std::lock_guard<std::mutex> lock(audioRenderMutex_);
-    audioRenderer_ = AudioStandard::AudioRenderer::Create(AudioStandard::AudioStreamType::STREAM_MUSIC);
-    if (!audioRenderer_) {
-        SHARING_LOGE("audioRenderer_ is NULL.");
-        return PLAYER_ERROR_EMPTY_INSTANCE;
-    }
-
-    return PLAYER_SUCCESS;
-}
-
 int32_t AudioSink::Prepare(int32_t channels, int32_t sampleRate)
 {
     SHARING_LOGD("channels(%{public}d) sampleRate(%{public}d) playerId: %{public}u.", channels, sampleRate, playerId_);
@@ -347,26 +334,37 @@ int32_t AudioSink::Write(uint8_t *buffer, size_t size)
 
 void AudioSink::OnInterrupt(const AudioStandard::InterruptEvent &interruptEvent)
 {
-    SHARING_LOGI("OnInterrupt hintType: %{public}d", interruptEvent.hintType);
-    std::lock_guard<std::mutex> lock(stateMutex_);
-    switch (interruptEvent.hintType) {
-        case AudioStandard::InterruptHint::INTERRUPT_HINT_PAUSE:
-            // 音频流暂停，暂停音频写入
-            needWrite_ = false;
-            if (onAudioFocusChange_) {
-                onAudioFocusChange_(false);
-            }
-            break;
-        case AudioStandard::InterruptHint::INTERRUPT_HINT_RESUME:
-            // 音频流恢复，恢复音频写入和重新起播
-            Start();
-            if (onAudioFocusChange_) {
-                onAudioFocusChange_(true);
-            }
-            break;
-        default:
-            break;
+    SHARING_LOGI("OnInterrupt eventType: %{public}d, forceType: %{public}d, hintType: %{public}d",
+        interruptEvent.eventType, interruptEvent.forceType, interruptEvent.hintType);
+    using namespace OHOS::AudioStandard;
+    if (interruptEvent.forceType == InterruptForceType::INTERRUPT_FORCE) {
+        switch (interruptEvent.hintType) {
+            case InterruptHint::INTERRUPT_HINT_PAUSE:
+                needWrite_ = false;
+                break;
+            default:
+                break;
+        }
+    } else if (interruptEvent.forceType == InterruptForceType::INTERRUPT_SHARE) {
+        switch (interruptEvent.hintType) {
+            case InterruptHint::INTERRUPT_HINT_RESUME:
+                Start();
+                break;
+            default:
+                break;
+        }
     }
+
+    AudioInterruptEvent audioInterruptEvent = {.eventType = interruptEvent.eventType,
+                                               .forceType = interruptEvent.forceType,
+                                               .hintType = interruptEvent.hintType};
+    std::lock_guard<std::mutex> lock(stateMutex_);
+    if (onAudioInterrupt_) {
+        onAudioInterrupt_(audioInterruptEvent);
+    } else {
+        SHARING_LOGW("OnInterrupt callback null");
+    }
+
 }
 
 void AudioSink::OnStateChange(const AudioStandard::RendererState state, const AudioStandard::StateChangeCmdType cmdType)
@@ -380,10 +378,10 @@ void AudioSink::SetIsPcSource(bool isPcSource)
     isPcSource_ = isPcSource;
 }
 
-void AudioSink::SetAudioFocusChangeCallback(std::function<void(bool hasFocus)> callback)
+void AudioSink::SetAudioOnInterruptCallback(std::function<void(AudioInterruptEvent &audioInterruptEvent)> callback)
 {
     std::lock_guard<std::mutex> lock(stateMutex_);
-    onAudioFocusChange_ = callback;
+    onAudioInterrupt_ = callback;
 }
 } // namespace Sharing
 } // namespace OHOS

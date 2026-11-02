@@ -267,6 +267,17 @@ public:
      * @return Returns 0 if the window is resized; returns -1 otherwise.
      */
     virtual int32_t ReSize(int32_t windowId, int32_t width, int32_t height) = 0;
+
+    /**
+     * @brief Set audio is enable.
+     *
+     * @param contextId Indicates the context ID.
+     * @param agentId Indicates the agent ID.
+     * @param isEnable Whether audio is enable.
+     * @return Returns 0 if audio enable set; returns -1 otherwise.
+     */
+    virtual int32_t ForwardEvent(uint32_t contextId, uint32_t agentId, bool isEnable) = 0;
+
 };
 
 } // namespace Sharing

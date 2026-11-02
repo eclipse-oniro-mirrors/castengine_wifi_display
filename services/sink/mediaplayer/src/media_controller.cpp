@@ -269,6 +269,16 @@ void MediaController::SetKeyRedirect(uint64_t surfaceId, bool keyRedirect)
     }
 }
 
+void MediaController::SetAudioEnable(bool isEnable)
+{
+    SHARING_LOGI("set audio enable:%{public}d", isEnable);
+    if (isEnable) {
+        RestartAudioPlay();
+    } else {
+        ReleaseAudioPlay();
+    }
+}
+
 bool MediaController::ReleaseAudioPlay()
 {
     if (!audioPlayController_) {

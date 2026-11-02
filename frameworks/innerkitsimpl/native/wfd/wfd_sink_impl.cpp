@@ -442,7 +442,7 @@ int32_t WfdSinkImpl::DeleteBoundDevice(std::string &deviceAddress)
 
 int32_t WfdSinkImpl::SetAudioEnable(const std::string &deviceId, bool isEnable)
 {
-    SHARING_LOGI("SetAudioEnable, isEnable:%{public}d", isEnable);
+    SHARING_LOGI("SetAudioEnable isEnable:%{public}d", isEnable);
     auto ipcAdapter = ipcAdapter_.lock();
     RETURN_INVALID_IF_NULL(ipcAdapter);
     auto msg = std::make_shared<WfdAudioEnableReq>();

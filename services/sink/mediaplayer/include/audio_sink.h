@@ -92,7 +92,6 @@ private:
 
     std::mutex mutex_;
     std::unique_ptr<OHOS::AudioStandard::AudioRenderer> audioRenderer_ = nullptr;
-    std::function<void(bool hasFocus)> onAudioInterrupt_ = nullptr;
     std::function<void(AudioInterruptEvent &audioInterruptEvent)> onAudioInterrupt_ = nullptr;
     std::mutex audioRenderMutex_;
     std::mutex stateMutex_;

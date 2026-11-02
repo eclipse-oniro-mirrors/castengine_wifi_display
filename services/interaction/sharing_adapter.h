@@ -276,8 +276,7 @@ public:
      * @param isEnable Whether audio is enable.
      * @return Returns 0 if audio enable set; returns -1 otherwise.
      */
-    virtual int32_t ForwardEvent(uint32_t contextId, uint32_t agentId, bool isEnable) = 0;
-
+    virtual int32_t SetAudioEnable(uint32_t contextId, uint32_t agentId, bool isEnable) = 0;
 };
 
 } // namespace Sharing

@@ -1353,7 +1353,7 @@ int32_t WfdSinkScene::HandleDeleteBoundDevice(std::shared_ptr<WfdDeleteBoundDevi
 }
 
 int32_t WfdSinkScene::HandleSetAudioEnable(std::shared_ptr<WfdAudioEnableReq> &msg,
-                                              std::shared_ptr<WfdCommonRsp> &reply)
+                                           std::shared_ptr<WfdCommonRsp> &reply)
 {
     SHARING_LOGI("%{public}s.", __FUNCTION__);
     (void)reply;
@@ -1371,7 +1371,7 @@ int32_t WfdSinkScene::HandleSetAudioEnable(std::shared_ptr<WfdAudioEnableReq> &m
             return -1;
         }
 
-        SHARING_LOGI("set audio enable:%{public}d",msg->isEnable);
+        SHARING_LOGI("set audio enable:%{public}d", msg->isEnable);
         sharingAdapter->SetAudioEnable(itemDev->second->contextId, itemDev->second->agentId, msg->isEnable);
     }
     

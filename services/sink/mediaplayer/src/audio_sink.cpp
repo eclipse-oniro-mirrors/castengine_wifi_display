@@ -364,7 +364,6 @@ void AudioSink::OnInterrupt(const AudioStandard::InterruptEvent &interruptEvent)
     } else {
         SHARING_LOGW("OnInterrupt callback null");
     }
-
 }
 
 void AudioSink::OnStateChange(const AudioStandard::RendererState state, const AudioStandard::StateChangeCmdType cmdType)

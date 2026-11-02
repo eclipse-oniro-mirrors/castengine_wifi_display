@@ -537,7 +537,7 @@ void Agent::SendChannelSetVolumeEvent(SessionStatusMsg::Ptr &statusMsg, EventTyp
 
 void Agent::SendChannelSetAudioEnableEvent(SessionStatusMsg::Ptr &statusMsg, EventType eventType)
 {
-   SendChannelCommonEvent<ChannelSetAudioEnableEventMsg>(
+    SendChannelCommonEvent<ChannelSetAudioEnableEventMsg>(
         statusMsg, eventType,
         [](auto &channelMsg, auto &statusMsg) { channelMsg->isAudioEnable = statusMsg->isAudioEnable; });
 }

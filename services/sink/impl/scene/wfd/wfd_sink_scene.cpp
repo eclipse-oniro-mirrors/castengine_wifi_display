@@ -1361,21 +1361,17 @@ int32_t WfdSinkScene::HandleSetAudioEnable(std::shared_ptr<WfdAudioEnableReq> &m
     auto sharingAdapter = sharingAdapter_.lock();
     RETURN_INVALID_IF_NULL(sharingAdapter);
 
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        auto itemDev = devConnectionMap_.find(msg->deviceId);
-        if (itemDev == devConnectionMap_.end() || itemDev->second == nullptr) {
-            lock.unlock();
-            SHARING_LOGE("can not find dev, mac: %{private}s.", GetAnonymousMAC(msg->deviceId).c_str());
-            OnInnerError(0, 0, SharingErrorCode::ERR_BAD_PARAMETER, "HandleSetAudioEnable can't find dev");
-            return -1;
-        }
-
-        SHARING_LOGI("set audio enable:%{public}d", msg->isEnable);
-        sharingAdapter->SetAudioEnable(itemDev->second->contextId, itemDev->second->agentId, msg->isEnable);
+    std::unique_lock<std::mutex> lock(mutex_);
+    auto itemDev = devConnectionMap_.find(msg->deviceId);
+    if (itemDev == devConnectionMap_.end() || itemDev->second == nullptr) {
+        lock.unlock();
+        SHARING_LOGE("can not find dev, mac: %{private}s.", GetAnonymousMAC(msg->deviceId).c_str());
+        OnInnerError(0, 0, SharingErrorCode::ERR_BAD_PARAMETER, "HandleSetAudioEnable can't find the dev");
+        return -1;
     }
-    
-    return 0;
+
+    SHARING_LOGI("set audio enable:%{public}d", msg->isEnable);
+    return sharingAdapter->SetAudioEnable(itemDev->second->contextId, itemDev->second->agentId, msg->isEnable);
 }
 
 void WfdSinkScene::RegisterWfdAbilityListener()

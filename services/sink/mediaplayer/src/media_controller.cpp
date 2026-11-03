@@ -269,16 +269,6 @@ void MediaController::SetKeyRedirect(uint64_t surfaceId, bool keyRedirect)
     }
 }
 
-void MediaController::SetAudioEnable(bool isEnable)
-{
-    SHARING_LOGI("set audio enable:%{public}d", isEnable);
-    if (isEnable) {
-        RestartAudioPlay();
-    } else {
-        ReleaseAudioPlay();
-    }
-}
-
 bool MediaController::ReleaseAudioPlay()
 {
     if (!audioPlayController_) {
@@ -338,6 +328,16 @@ bool MediaController::RestartAudioPlay()
    
     SHARING_LOGI("restart audio controller end");
     return true;
+}
+
+bool MediaController::SetAudioEnable(bool isEnable)
+{
+    SHARING_LOGI("set audio enable:%{public}d", isEnable);
+    if (isEnable) {
+        return RestartAudioPlay();
+    } else {
+        return ReleaseAudioPlay();
+    }
 }
 
 void MediaController::OnPlayControllerNotify(ProsumerStatusMsg::Ptr &statusMsg)

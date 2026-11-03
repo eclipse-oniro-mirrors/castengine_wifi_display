@@ -307,7 +307,7 @@ bool MediaController::RestartAudioPlay()
     {
         std::lock_guard<std::mutex> lock(playAudioMutex_);
         audioPlayController_ = std::make_shared<AudioPlayController>(mediachannelId_);
-        bool ret = audioPlayController_->Init(audioTrack_, isPcSource);
+        bool ret = audioPlayController_->Init(audioTrack_, isPcSource_);
         if (!ret) {
             SHARING_LOGE("audio controller init error.");
             audioPlayController_.reset();

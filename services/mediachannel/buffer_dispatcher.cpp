@@ -737,6 +737,7 @@ int32_t BufferDispatcher::AttachReceiver(BufferReceiver::Ptr receiver)
             if (lastAudioIndex_ == INVALID_INDEX) {
                 audioNeedActivate_ = true;
             }
+            videoNeedActivate_ = true;
         }
     }
 

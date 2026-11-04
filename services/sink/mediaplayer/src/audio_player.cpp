@@ -141,7 +141,7 @@ void AudioPlayer::DropOneFrame()
     }
 }
 
-void AudioPlayer::SetAudioOnInterruptCallback(std::function<void(AudioInterruptEvent &audioInterruptEvent)> callback)
+void AudioPlayer::SetAudioOnInterruptCallback(std::function<void(AudioInterruptEvent &)> callback)
 {
     if (audioSink_) {
         audioSink_->SetAudioOnInterruptCallback(callback);

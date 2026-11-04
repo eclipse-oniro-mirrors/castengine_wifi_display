@@ -53,14 +53,14 @@ public:
     void SetVolume(float volume);
     void SetKeyMode(uint64_t surfaceId, bool mode);
     void SetKeyRedirect(uint64_t surfaceId, bool keyRedirect);
-    bool SetAudioEnable(bool isEnable);
 
     void OnPlayControllerNotify(ProsumerStatusMsg::Ptr &statusMsg);
+    bool SetAudioEnable(bool isEnable);
+    bool ReleaseAudioPlay();
+    bool RestartAudioPlay();
 
 private:
     void ReportAVSyncExceptionIfNeeded();
-    bool ReleaseAudioPlay();
-    bool RestartAudioPlay();
 
     uint32_t mediachannelId_ = 0;
     std::mutex playAudioMutex_;
@@ -70,10 +70,10 @@ private:
     std::shared_ptr<AudioPlayController> audioPlayController_ = nullptr;
     std::map<uint64_t, std::shared_ptr<VideoPlayController>> videoPlayerMap_;
     std::shared_ptr<VideoAudioSync> videoAudioSync_;
+    bool isPcSource_ = false;
 
     AudioTrack audioTrack_;
     VideoTrack videoTrack_;
-    bool isPcSource_ = false;
 };
 
 } // namespace Sharing

@@ -936,17 +936,17 @@ SharingErrorCode MediaChannel::HandleResumeProducer(SharingEvent &event)
 
 SharingErrorCode MediaChannel::HandleSetAudioEnable(SharingEvent &event)
 {
+    SHARING_LOGD("trace.");
     auto channelMsg = ConvertEventMsg<ChannelSetAudioEnableEventMsg>(event);
     if (channelMsg == nullptr) {
-        SHARING_LOGE("fail to set audio enable, msg null");
+        SHARING_LOGE("unknow msg");
         return SharingErrorCode::ERR_GENERAL_ERROR;
     }
-    if (!playController_) {
-        SHARING_LOGE("fail to set audio enable, controller null");
-        return SharingErrorCode::ERR_GENERAL_ERROR;
+    if (playController_ && playController_->SetAudioEnable(channelMsg->isAudioEnable)) {
+        return SharingErrorCode::ERR_OK;
     }
-    bool isSuccess = playController_->SetAudioEnable(channelMsg->isAudioEnable);
-    return isSuccess ? SharingErrorCode::ERR_OK : SharingErrorCode::ERR_GENERAL_ERROR;
+    SHARING_LOGE("set audio enable failed, mediaChannelId: %{public}u.", GetId());
+    return SharingErrorCode::ERR_GENERAL_ERROR;
 }
 
 void MediaChannel::SendAgentEvent(ProsumerStatusMsg::Ptr &msg, EventType eventType)

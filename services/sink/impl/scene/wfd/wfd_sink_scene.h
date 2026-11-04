@@ -193,10 +193,10 @@ private:
     int32_t HandleDeleteBoundDevice(std::shared_ptr<WfdDeleteBoundDeviceReq> &msg,
                                     std::shared_ptr<WfdCommonRsp> &reply);
     int32_t HandleSetAudioEnable(std::shared_ptr<WfdAudioEnableReq> &msg, std::shared_ptr<WfdCommonRsp> &reply);
+    void OnAudioInterrupt(AudioInterruptEvent &info);
     void FillAndReportDeviceInfo(const ConnectionInfo &connectionInfo);
 
     void NotifyIsPcSource();
-    void OnAudioInterrupt(AudioInterruptEvent &info);
     void HandleGcJoinGroup(ConnectionInfo &connectionInfo, WfdTrustListManager &trustListManager);
     static bool LoadConfigInt(const std::string &group, const std::string &key, const std::string &defaultValue,
                          int32_t &out);

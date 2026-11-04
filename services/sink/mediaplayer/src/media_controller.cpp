@@ -332,21 +332,21 @@ bool MediaController::RestartAudioPlay()
 
 bool MediaController::SetAudioEnable(bool isEnable)
 {
-    SHARING_LOGI("set audio enable:%{public}d", isEnable);
+    SHARING_LOGI("isEnable:%{public}s", isEnable ? "true" : "false");
     if (isEnable) {
         return RestartAudioPlay();
-    } else {
-        return ReleaseAudioPlay();
     }
+    return ReleaseAudioPlay();
 }
 
 void MediaController::OnPlayControllerNotify(ProsumerStatusMsg::Ptr &statusMsg)
 {
     SHARING_LOGD("trace.");
     RETURN_IF_NULL(statusMsg);
-    if (statusMsg->audioInterruptEvent.forceType == AudioStandard::InterruptForceType::INTERRUPT_FORCE &&
-        statusMsg->audioInterruptEvent.hintType == AudioStandard::InterruptHint::INTERRUPT_HINT_STOP) {
-        SHARING_LOGI("on audio interrupt force stop");
+    auto &audioInterruptEvent = statusMsg->audioInterruptEvent;
+    if (audioInterruptEvent.forceType == AudioStandard::InterruptForceType::INTERRUPT_FORCE &&
+        audioInterruptEvent.hintType == AudioStandard::InterruptHint::INTERRUPT_HINT_STOP) {
+        SHARING_LOGI("audio force stop, release audio play");
         ReleaseAudioPlay();
     }
 

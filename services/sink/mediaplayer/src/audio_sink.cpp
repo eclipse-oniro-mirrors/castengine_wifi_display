@@ -337,22 +337,12 @@ void AudioSink::OnInterrupt(const AudioStandard::InterruptEvent &interruptEvent)
     SHARING_LOGI("OnInterrupt eventType: %{public}d, forceType: %{public}d, hintType: %{public}d",
         interruptEvent.eventType, interruptEvent.forceType, interruptEvent.hintType);
     using namespace OHOS::AudioStandard;
-    if (interruptEvent.forceType == InterruptForceType::INTERRUPT_FORCE) {
-        switch (interruptEvent.hintType) {
-            case InterruptHint::INTERRUPT_HINT_PAUSE:
-                needWrite_ = false;
-                break;
-            default:
-                break;
-        }
-    } else if (interruptEvent.forceType == InterruptForceType::INTERRUPT_SHARE) {
-        switch (interruptEvent.hintType) {
-            case InterruptHint::INTERRUPT_HINT_RESUME:
-                Start();
-                break;
-            default:
-                break;
-        }
+    if (interruptEvent.forceType == InterruptForceType::INTERRUPT_FORCE &&
+        interruptEvent.hintType == InterruptHint::INTERRUPT_HINT_PAUSE) {
+        needWrite_ = false;
+    } else if (interruptEvent.forceType == InterruptForceType::INTERRUPT_SHARE &&
+               interruptEvent.hintType == InterruptHint::INTERRUPT_HINT_RESUME) {
+        Start();
     }
 
     AudioInterruptEvent audioInterruptEvent = {.eventType = interruptEvent.eventType,
@@ -377,7 +367,7 @@ void AudioSink::SetIsPcSource(bool isPcSource)
     isPcSource_ = isPcSource;
 }
 
-void AudioSink::SetAudioOnInterruptCallback(std::function<void(AudioInterruptEvent &audioInterruptEvent)> callback)
+void AudioSink::SetAudioOnInterruptCallback(std::function<void(AudioInterruptEvent &)> callback)
 {
     std::lock_guard<std::mutex> lock(stateMutex_);
     onAudioInterrupt_ = callback;

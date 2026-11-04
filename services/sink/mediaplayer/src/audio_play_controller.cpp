@@ -77,7 +77,7 @@ bool AudioPlayController::Start(BufferDispatcher::Ptr &dispatcher)
         dispatcher->AttachReceiver(bufferReceiver_);
         StartAudioThread();
         audioPlayer_->SetAudioOnInterruptCallback(
-            [this](AudioInterruptEvent &audioInterruptEvent) { this->HandleAudioOnInterrupt(audioInterruptEvent); });
+            [this](AudioInterruptEvent &event) { this->HandleAudioOnInterrupt(event); });
     } else {
         return false;
     }
@@ -210,13 +210,10 @@ void AudioPlayController::DropOneFrame()
     }
 }
 
-void AudioPlayController::SetMediaController(std::shared_ptr<MediaController> mediaController)
-{
-    mediaController_ = mediaController;
-}
-
 void AudioPlayController::HandleAudioOnInterrupt(AudioInterruptEvent &audioInterruptEvent)
 {
+    SHARING_LOGI("handle audio interrupt, eventType: %{public}d, forceType: %{public}d, hintType: %{public}d",
+                 audioInterruptEvent.eventType,audioInterruptEvent.forceType, audioInterruptEvent.hintType);
     if (audioInterruptEvent.hintType == AudioStandard::InterruptHint::INTERRUPT_HINT_RESUME) {
         if (!hasAudioFocus_.load()) {
             SHARING_LOGI("Audio focus regained");
@@ -234,15 +231,23 @@ void AudioPlayController::HandleAudioOnInterrupt(AudioInterruptEvent &audioInter
     NotifyAudioOnInterrupt(audioInterruptEvent);
 }
 
+void AudioPlayController::SetMediaController(std::shared_ptr<MediaController> mediaController)
+{
+    mediaController_ = mediaController;
+}
+
 void AudioPlayController::NotifyAudioOnInterrupt(AudioInterruptEvent &audioInterruptEvent)
 {
     SHARING_LOGI("notify audio on interrupt, hintType:%{public}d", audioInterruptEvent.hintType);
     auto mediaController = mediaController_.lock();
-    RETURN_IF_NULL(mediaController);
+    if (!mediaController) {
+        SHARING_LOGW("mediaController is null");
+        return;
+    }
 
-    auto msg = std::make_shared<EventMsg>();
+    auto eventMsg = std::make_shared<EventMsg>();
     auto statusMsg = std::make_shared<ProsumerStatusMsg>();
-    statusMsg->eventMsg = msg;
+    statusMsg->eventMsg = eventMsg;
     statusMsg->status = CONNTROLLER_NOTIFY_AUDIO_ON_INTERRUPT;
     statusMsg->errorCode = ERR_OK;
     statusMsg->audioInterruptEvent = audioInterruptEvent;

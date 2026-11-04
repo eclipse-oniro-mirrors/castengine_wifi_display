@@ -42,7 +42,6 @@ public:
     bool Init(AudioTrack &audioTrack, bool isPcSource);
     bool Start(BufferDispatcher::Ptr &dispatcher);
     int64_t GetAudioDecoderTimestamp();
-    void HandleAudioOnInterrupt(AudioInterruptEvent &audioInterruptEvent);
     void SetMediaController(std::shared_ptr<MediaController> mediaController);
 
 protected:
@@ -50,9 +49,11 @@ protected:
     void AudioPlayThread();
     void StartAudioThread();
     void OnAudioFocusTimeout();
-    void NotifyAudioOnInterrupt(AudioInterruptEvent &audioInterruptEvent);
 
 private:
+    void HandleAudioOnInterrupt(AudioInterruptEvent &audioInterruptEvent);
+    void NotifyAudioOnInterrupt(AudioInterruptEvent &audioInterruptEvent);
+
     static constexpr int64_t AUDIO_FOCUS_TIMEOUT_SEC = 10;
 
     uint32_t mediachannelId_ = 0;
@@ -64,6 +65,7 @@ private:
 
     std::atomic_bool hasAudioFocus_ = true;
     TimeoutTimer focusTimer_;
+    std::mutex mediaControllerMutex_;
     std::weak_ptr<MediaController> mediaController_;
 };
 

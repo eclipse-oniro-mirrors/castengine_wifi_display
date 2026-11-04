@@ -269,12 +269,12 @@ public:
     virtual int32_t ReSize(int32_t windowId, int32_t width, int32_t height) = 0;
 
     /**
-     * @brief Set audio is enable.
+     * @brief Set audio focus enable state.
      *
      * @param contextId Indicates the context ID.
      * @param agentId Indicates the agent ID.
-     * @param isEnable Whether audio is enable.
-     * @return Returns 0 if audio enable set; returns -1 otherwise.
+     * @param isEnable true to request audio focus, false to release audio focus.
+     * @return Returns 0 if set successfully; returns -1 otherwise.
      */
     virtual int32_t SetAudioEnable(uint32_t contextId, uint32_t agentId, bool isEnable) = 0;
 };

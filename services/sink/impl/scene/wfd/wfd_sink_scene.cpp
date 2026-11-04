@@ -741,7 +741,7 @@ void WfdSinkScene::OnRequest(std::shared_ptr<BaseMsg> msg, std::shared_ptr<BaseM
             auto data = std::static_pointer_cast<WfdAudioEnableReq>(msg);
             auto rsp = std::make_shared<WfdCommonRsp>();
 
-            HandleSetAudioEnable(data, rsp);
+            rsp->ret = HandleSetAudioEnable(data, rsp);
             reply = std::static_pointer_cast<BaseMsg>(rsp);
             break;
         }
@@ -1360,18 +1360,19 @@ int32_t WfdSinkScene::HandleSetAudioEnable(std::shared_ptr<WfdAudioEnableReq> &m
     RETURN_INVALID_IF_NULL(msg);
     auto sharingAdapter = sharingAdapter_.lock();
     RETURN_INVALID_IF_NULL(sharingAdapter);
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        auto itemDev = devConnectionMap_.find(msg->deviceId);
+        if (itemDev == devConnectionMap_.end() || itemDev->second == nullptr) {
+            lock.unlock();
+            SHARING_LOGE("can not find dev, mac: %{private}s.", GetAnonymousMAC(msg->deviceId).c_str());
+            OnInnerError(0, 0, SharingErrorCode::ERR_BAD_PARAMETER, "HandleSetAudioEnable can't find dev");
+            return -1;
+        }
 
-    std::unique_lock<std::mutex> lock(mutex_);
-    auto itemDev = devConnectionMap_.find(msg->deviceId);
-    if (itemDev == devConnectionMap_.end() || itemDev->second == nullptr) {
-        lock.unlock();
-        SHARING_LOGE("can not find dev, mac: %{private}s.", GetAnonymousMAC(msg->deviceId).c_str());
-        OnInnerError(0, 0, SharingErrorCode::ERR_BAD_PARAMETER, "HandleSetAudioEnable can't find the dev");
-        return -1;
+        SHARING_LOGI("set audio enable:%{public}s.", msg->isEnable ? "true" : "false");
+        return sharingAdapter->SetAudioEnable(itemDev->second->contextId, itemDev->second->agentId, msg->isEnable);
     }
-
-    SHARING_LOGI("set audio enable:%{public}d", msg->isEnable);
-    return sharingAdapter->SetAudioEnable(itemDev->second->contextId, itemDev->second->agentId, msg->isEnable);
 }
 
 void WfdSinkScene::RegisterWfdAbilityListener()
@@ -2007,7 +2008,8 @@ void WfdSinkScene::NotifyIsPcSource()
 
 void WfdSinkScene::OnAudioInterrupt(AudioInterruptEvent &info)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("audio interrupt, eventType: %{public}d, forceType: %{public}d, hintType: %{public}d", info.eventType,
+                 info.forceType, info.hintType);
     auto ipcAdapter = ipcAdapter_.lock();
     RETURN_IF_NULL(ipcAdapter);
 

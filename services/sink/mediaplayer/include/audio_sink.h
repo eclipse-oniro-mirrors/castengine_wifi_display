@@ -82,7 +82,7 @@ public:
                        const AudioStandard::StateChangeCmdType cmdType) override;
     void OnInterrupt(const AudioStandard::InterruptEvent &interruptEvent) override;
     void SetIsPcSource(bool isPcSource);
-    void SetAudioOnInterruptCallback(std::function<void(AudioInterruptEvent &audioInterruptEvent)> callback);
+    void SetAudioOnInterruptCallback(std::function<void(AudioInterruptEvent &)> callback);
 
 private:
     bool running_ = false;
@@ -92,7 +92,7 @@ private:
 
     std::mutex mutex_;
     std::unique_ptr<OHOS::AudioStandard::AudioRenderer> audioRenderer_ = nullptr;
-    std::function<void(AudioInterruptEvent &audioInterruptEvent)> onAudioInterrupt_ = nullptr;
+    std::function<void(AudioInterruptEvent &)> onAudioInterrupt_ = nullptr;
     std::mutex audioRenderMutex_;
     std::mutex stateMutex_;
 };

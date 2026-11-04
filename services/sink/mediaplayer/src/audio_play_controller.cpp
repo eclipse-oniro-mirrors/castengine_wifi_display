@@ -213,7 +213,7 @@ void AudioPlayController::DropOneFrame()
 void AudioPlayController::HandleAudioOnInterrupt(AudioInterruptEvent &audioInterruptEvent)
 {
     SHARING_LOGI("handle audio interrupt, eventType: %{public}d, forceType: %{public}d, hintType: %{public}d",
-                 audioInterruptEvent.eventType,audioInterruptEvent.forceType, audioInterruptEvent.hintType);
+                 audioInterruptEvent.eventType, audioInterruptEvent.forceType, audioInterruptEvent.hintType);
     if (audioInterruptEvent.hintType == AudioStandard::InterruptHint::INTERRUPT_HINT_RESUME) {
         if (!hasAudioFocus_.load()) {
             SHARING_LOGI("Audio focus regained");

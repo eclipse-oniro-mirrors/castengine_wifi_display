@@ -55,7 +55,7 @@ public:
     bool Start();
     bool Init(const AudioTrack &audioTrack, bool isPcSource);
     int64_t GetDecoderTimestamp();
-    void SetAudioFocusChangeCallback(std::function<void(bool hasFocus)> callback);
+    void SetAudioOnInterruptCallback(std::function<void(AudioInterruptEvent &)> callback);
 
 private:
     uint32_t playerId_ = -1;

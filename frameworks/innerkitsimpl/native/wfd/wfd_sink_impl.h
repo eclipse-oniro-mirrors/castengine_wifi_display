@@ -76,6 +76,7 @@ public:
     int32_t SetMediaFormat(std::string deviceId, CodecAttr videoAttr, CodecAttr audioAttr) override;
     int32_t GetBoundDevicesList(std::vector<BoundDeviceInfo> &devices) override;
     int32_t DeleteBoundDevice(std::string &deviceAddress) override;
+    int32_t SetAudioEnable(const std::string &deviceId, bool isEnable) override;
 
 private:
     std::weak_ptr<IpcMsgAdapter> ipcAdapter_;

@@ -20,6 +20,7 @@
 #include <string>
 #include "agent/agent_def.h"
 #include "const_def.h"
+#include "interaction/ipc_codec/ipc_codec_bind_macros.h"
 #include "sharing_log.h"
 #include "surface.h"
 
@@ -46,7 +47,7 @@
     EVENT_AGENT_STATE_PROSUMER_RESUME, EVENT_AGENT_STATE_PROSUMER_DESTROY, EVENT_AGENT_STATE_PLAY_START,               \
     EVENT_AGENT_STATE_PLAY_STOP, EVENT_AGENT_PROSUMER_ERROR, EVENT_AGENT_CHANNEL_SETVOLUME, EVENT_AGENT_KEYMODE_START, \
     EVENT_AGENT_KEYMODE_STOP, EVENT_AGENT_ACCELERATION_DONE, EVENT_AGENT_DECODER_DIED,                                \
-    EVENT_AGENT_STATE_PROSUMER_INIT
+    EVENT_AGENT_STATE_PROSUMER_INIT, EVENT_AGENT_AUDIO_ON_INTERRUPT, EVENT_AGENT_SET_AUDIO_ENABLE
 
 #define EVENT_SESSION EVENT_SESSION_BASE = MAKE_EVENT_TYPE(3, 0), EVENT_SESSION_INIT, EVENT_SESSION_TEARDOWN
 #define EVENT_MEDIA                                                                                                   \
@@ -57,7 +58,8 @@
     EVENT_MEDIA_PRODUCER_PAUSE, EVENT_MEDIA_PRODUCER_RESUME, EVENT_MEDIA_MIXPLAYER_CREATE,                            \
     EVENT_MEDIA_MIXPLAYER_DESTROY, EVENT_MEDIA_MIXPLAYER_START, EVENT_MEDIA_MIXPLAYER_STOP,                           \
     EVENT_MEDIA_CHANNEL_APPENDSURFACE, EVENT_MEDIA_CHANNEL_REMOVESURFACE, EVENT_MEDIA_CHANNEL_SETSCENETYPE,           \
-    EVENT_MEDIA_CHANNEL_SETVOLUME, EVENT_MEDIA_CHANNEL_KEY_REDIRECT, EVENT_AGENT_STATE_WRITE_WARNING
+    EVENT_MEDIA_CHANNEL_SETVOLUME, EVENT_MEDIA_CHANNEL_KEY_REDIRECT, EVENT_AGENT_STATE_WRITE_WARNING,                 \
+    EVENT_MEDIA_CHANNEL_SET_AUDIO_ENABLE
 
 #define EVENT_SCHEDULER EVENT_SCHEDULER_BASE = MAKE_EVENT_TYPE(5, 0)
 
@@ -65,7 +67,8 @@
     EVENT_INTERACTION_BASE = MAKE_EVENT_TYPE(6, 0), EVENT_INTERACTIONMGR_REMOVE_INTERACTION,                         \
     EVENT_INTERACTION_MSG_ERROR, EVENT_INTERACTION_STATE_AGENT_DESTROYED, EVENT_INTERACTION_STATE_CONTEXT_DESTROYED, \
     EVENT_INTERACTIONMGR_DESTROY_INTERACTION, EVENT_INTERACTION_ACCELERATION_DONE,                                   \
-    EVENT_INTERACTION_STATE_REMOVE_SURFACE, EVENT_INTERACTION_DECODER_DIED
+    EVENT_INTERACTION_STATE_REMOVE_SURFACE, EVENT_INTERACTION_DECODER_DIED,                                          \
+    EVENT_INTERACTION_AUDIO_ON_INTERRUPT
 
 #define EVENT_CONFIGURE                                                                            \
     EVENT_CONFIGURE_BASE = MAKE_EVENT_TYPE(7, 0), EVENT_CONFIGURE_READY, EVENT_CONFIGURE_INTERACT, \
@@ -143,6 +146,15 @@ struct EventMsg : public FromMsg,
     SharingErrorCode errorCode = ERR_OK;
 };
 
+struct AudioInterruptEvent {
+    
+    IPC_BIND_ATTR(eventType, forceType, hintType)
+
+    int32_t eventType;
+    int32_t forceType;
+    int32_t hintType;
+};
+
 struct ContextEventMsg : public EventMsg {
     using Ptr = std::shared_ptr<ContextEventMsg>;
 
@@ -161,6 +173,8 @@ struct AgentEventMsg : public ContextEventMsg {
     float volume;
     uint32_t prosumerId = INVALID_ID;
     SceneType sceneType;
+    bool isAudioEnable;
+    AudioInterruptEvent audioInterruptEvent;
 };
 
 struct SessionEventMsg : public AgentEventMsg {
@@ -188,6 +202,8 @@ struct SessionStatusMsg : public AgentStatusMsg {
     MediaType mediaType;
     SceneType sceneType;
     bool isPcSource;
+    bool isAudioEnable;
+    AudioInterruptEvent audioInterruptEvent;
 };
 
 struct WindowProperty {
@@ -216,6 +232,7 @@ struct InteractionEventMsg : public EventMsg {
     uint32_t contextId = INVALID_ID;
     uint64_t surfaceId = INVALID_ID;
     AgentType agentType = NONE_AGENT;
+    AudioInterruptEvent audioInterruptEvent;
 };
 
 struct AudioTrack {

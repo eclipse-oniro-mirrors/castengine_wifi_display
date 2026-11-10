@@ -37,8 +37,6 @@
 #include "json.hpp"
 #include "system_ability_definition.h"
 #include "iservice_registry.h"
-#include "mem_mgr_client.h"
-#include "mem_mgr_proxy.h"
 
 using namespace OHOS::DistributedHardware;
 using nlohmann::json;
@@ -956,7 +954,6 @@ int32_t WfdSourceScene::HandleAddDevice(std::shared_ptr<BaseMsg> &baseMsg,
     HILOG_COMM_INFO("connect device: %{public}s, ret = %{public}d", GetAnonyString(msg->deviceId).c_str(), ret);
     OnConnectionChanged(connectionInfo);
     isReportError_ = false;
-    Memory::MemMgrClient::GetInstance().SetCritical(getpid(), true, SHARING_SERVICE_TEMP_SA_ID);
     return ret;
 }
 
@@ -1035,7 +1032,6 @@ int32_t WfdSourceScene::HandleRemoveDevice(std::shared_ptr<BaseMsg> &baseMsg,
     }
 
     SetCheckWfdDisconnectionTimer();
-    Memory::MemMgrClient::GetInstance().SetCritical(getpid(), false, SHARING_SERVICE_TEMP_SA_ID);
     return 0;
 }
 
@@ -1059,7 +1055,7 @@ int32_t WfdSourceScene::CreateScreenCapture()
 
         uint32_t ctxId = contextId_;
         uint32_t agtId = agentId_;
-        sharingAdapter->CreateAgent(ctxId, agtId, AgentType::SINK_AGENT, "ScreenCaptureSession", localIp_);
+        sharingAdapter->CreateAgent(ctxId, agtId, AgentType::SINK_AGENT, "ScreenCaptureSession");
         contextId_ = ctxId;
         agentId_ = agtId;
         if (contextId_ == INVALID_ID || agentId_ == INVALID_ID) {
@@ -1263,7 +1259,7 @@ int32_t WfdSourceScene::AppendCast(const std::string &deviceId)
 
     uint32_t contextId = contextId_;
     uint32_t agentId = agentId_;
-    sharingAdapter->CreateAgent(contextId, agentId, AgentType::SRC_AGENT, "WfdSourceSession", localIp_);
+    sharingAdapter->CreateAgent(contextId, agentId, AgentType::SRC_AGENT, "WfdSourceSession");
     if (contextId == INVALID_ID || agentId == INVALID_ID) {
         lock.unlock();
         HILOG_COMM_ERROR("create source agent failed.");

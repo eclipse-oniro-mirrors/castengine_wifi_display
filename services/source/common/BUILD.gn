@@ -49,5 +49,5 @@ ohos_source_set("sharing_source_common_srcs") {
   ]
 
   subsystem_name = "castplus"
-  part_name = "wifi_display"
+  part_name = "sharing_framework"
 }

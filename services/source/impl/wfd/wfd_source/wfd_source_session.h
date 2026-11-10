@@ -143,7 +143,7 @@ private:
     VideoFormat videoFormat_ = VIDEO_1920X1080_30;
     WfdSessionState wfdState_ = WfdSessionState::M0;
 
-    SharingHiSysEvent::Ptr sysEvent_ = nullptr;
+    SharingHisysevent::Ptr sysEvent_ = nullptr;
     NetworkFactory::ServerPtr rtspServerPtr_ = nullptr;
     std::weak_ptr<INetworkSession> sessionPtr_;
 };

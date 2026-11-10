@@ -141,7 +141,9 @@ constexpr uint64_t FRAME_RATE_60 = 60;
 
 constexpr int32_t MAX_RTP_PAYLOAD_SIZE = 1316;
 constexpr int32_t MAX_VTP_PAYLOAD_SIZE = 188 * 348;
-
+#ifdef WIFI_DEVICE_ABILITY_ID
+#undef WIFI_DEVICE_ABILITY_ID
+#endif
 constexpr int32_t WIFI_DEVICE_ABILITY_ID = 1120;
 
 constexpr int32_t CONNECT_FAIL_UDP = -2;
@@ -164,7 +166,6 @@ constexpr int32_t DEAL_VIRTUAL_SCREEN = 1083;
 
 inline constexpr char PARAM_MEDIA_DUMP[] = "debug.cast.media.dump";
 inline constexpr char PARAM_YUV_SUPPORT[] = "debug.cast.yuv.support";
-inline constexpr char PARAM_MEDIA_DUMP[] = "debug.cast.media.dump";
 
 enum TrackType { TRACK_INVALID = -1, TRACK_VIDEO = 0, TRACK_AUDIO, TRACK_TITLE, TRACK_APPLICATION, TRACK_MAX };
 

@@ -24,6 +24,7 @@ constexpr int32_t DEFAULT_READ_BUFFER_SIZE = 1500;
 constexpr uint32_t SOCKET_DEFAULT_BUF_SIZE = 256 * 1024;
 constexpr uint32_t READ_BUF_SIZE = 2048;
 constexpr uint32_t MAX_READ_BUF_SIZE = 102400000;
+constexpr int32_t SEND_TIMEOUT_MS = 5000;
 class SocketUtils {
 public:
     static bool CreateUdpSession(unsigned port, int32_t &fd);
@@ -35,6 +36,8 @@ public:
     static bool ListenSocket(int32_t fd, uint32_t backlog = MAX_BACKLOG_NUM);
     static bool BindSocket(int32_t fd, const std::string &host, uint16_t port);
     static bool ConnectSocket(int32_t fd, bool isAsync, const std::string &ip, uint16_t port, int32_t &ret);
+    static bool ConnectSocket(int32_t fd, bool isAsync, const std::string &localIp, uint16_t localPort,
+                              const std::string &ip, uint16_t port, int32_t &ret);
 
     static void SetKeepAlive(int32_t sockfd);
     static bool SetReuseAddr(int32_t fd, bool isOn);
@@ -50,6 +53,7 @@ public:
     static int32_t ReadSocket(int32_t fd, char *buf, uint32_t len, int32_t &error);
 
     static void CloseSocket(int32_t fd);
+    static void ClosePeerSocket(int32_t fd);
     static void ShutDownSocket(int32_t fd);
     static bool IsUdpPortAvailable(uint16_t port);
 

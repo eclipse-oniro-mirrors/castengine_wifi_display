@@ -65,15 +65,15 @@ ohos_source_set("sharing_wfd_source_scene_srcs") {
     "ipc:ipc_single",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
-    "memmgr:memmgrclient",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
     "wifi:wifi_sdk",
     "window_manager:libdm",
     "media_foundation:media_foundation",
+    "wifi:wifi_sdk",
   ]
 
   subsystem_name = "castplus"
-  part_name = "wifi_display"
+  part_name = "sharing_framework"
 }

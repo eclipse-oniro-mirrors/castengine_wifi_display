@@ -18,7 +18,7 @@
 namespace OHOS {
 namespace Sharing {
 bool DmKit::isInited = false;
-const std::string PKG_NAME = "wifi_display";
+const std::string PKG_NAME = "sharing_framework";
 OHOS::DistributedHardware::DmDeviceInfo DmKit::localDeviceInfo_ = {};
 std::vector<OHOS::DistributedHardware::DmDeviceInfo> DmKit::trustedDeviceInfos_ = {};
 
@@ -54,7 +54,6 @@ OHOS::DistributedHardware::DmDeviceInfo &DmKit::GetLocalDevicesInfo()
     return localDeviceInfo_;
 }
 
-#ifdef WFD_SINK
 std::vector<OHOS::DistributedHardware::DmDeviceInfo> &DmKit::GetTrustedDevicesInfo()
 {
     SHARING_LOGD("trace.");
@@ -81,7 +80,6 @@ std::string DmKit::GetIpAddrByNetworkId(const std::string &networkId)
 
     return ipAddr;
 }
-#endif
 
 } // namespace Sharing
 } // namespace OHOS

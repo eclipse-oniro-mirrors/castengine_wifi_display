@@ -105,13 +105,11 @@ bool SocketUtils::CreateTcpClient(const char *ip, unsigned port, int32_t &fd, in
     return CreateSocket(SOCK_STREAM, fd) && ConnectSocket(fd, true, ip, port, ret);
 }
 
-#ifdef WFD_SINK
 bool SocketUtils::CreateUdpSession(unsigned port, int32_t &fd)
 {
     SHARING_LOGI("%{public}s.", __FUNCTION__);
     return CreateSocket(SOCK_DGRAM, fd) && SetRecvBuf(fd) && SetSendBuf(fd) && BindSocket(fd, "", port);
 }
-#endif
 
 bool SocketUtils::CreateSocket(int32_t socketType, int32_t &fd)
 {
@@ -516,7 +514,6 @@ int32_t SocketUtils::SendSocket(int32_t fd, const char *buf, int32_t len)
     return bytes;
 }
 
-#ifdef WFD_SINK
 int32_t SocketUtils::Sendto(int32_t fd, const char *buf, size_t len, const char *ip, int32_t nPort)
 {
     RETURN_INVALID_IF_NULL(buf);
@@ -543,7 +540,6 @@ int32_t SocketUtils::Sendto(int32_t fd, const char *buf, size_t len, const char 
 
     return retCode;
 }
-#endif
 
 int32_t SocketUtils::ReadSocket(int32_t fd, char *buf, uint32_t len, int32_t &error)
 {

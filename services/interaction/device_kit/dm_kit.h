@@ -36,10 +36,8 @@ class DmKit {
 public:
     static void InitDeviceManager();
 
-#ifdef WFD_SINK
     static std::string GetIpAddrByNetworkId(const std::string &networkId);
     static std::vector<OHOS::DistributedHardware::DmDeviceInfo> &GetTrustedDevicesInfo();
-#endif
 
     static OHOS::DistributedHardware::DmDeviceInfo &GetLocalDevicesInfo();
 

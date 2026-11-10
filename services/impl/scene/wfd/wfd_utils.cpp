@@ -23,6 +23,7 @@
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 #include "sharing_log.h"
+#include "utils/crypto.h"
 #include "utils/utils.h"
 
 namespace OHOS {
@@ -50,23 +51,6 @@ const int SOFTBUS_UDID_HASH_STRLEN = 16;
 const uint8_t FEATURE_ID = 0x81;
 const uint8_t HWMARK = 0xdd;
 const std::vector<uint8_t> ID_CASE_MASK = {0x08, 0x04, 0x02, 0x01};
-
-std::vector<uint8_t> GenerateSha256HashId(const uint8_t *originalId, uint32_t &len)
-{
-    if (originalId == nullptr || len == 0) {
-        return std::vector<uint8_t> {};
-    }
-
-    std::unique_ptr<uint8_t[]> outHash = std::make_unique<uint8_t[]>(len);
-    uint32_t outLen = 0;  // should be 32 bytes
-    int32_t ret = EVP_Digest(originalId, len, outHash.get(), &outLen, EVP_sha256(), nullptr);
-    if (ret != 1) {
-        SHARING_LOGE("Get Openssl Hash fail, %{public}d", ret);
-        return std::vector<uint8_t> {};
-    }
-    std::vector<uint8_t> result(outHash.get(), outHash.get() + outLen);
-    return result;
-}
 
 std::string ByteToHexStr(const std::vector<uint8_t> &data, uint32_t pos, uint32_t len, bool isNeed0x)
 {

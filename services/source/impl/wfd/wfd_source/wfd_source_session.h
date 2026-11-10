@@ -33,6 +33,55 @@
 namespace OHOS {
 namespace Sharing {
 
+// TODO: temporary no-op shim to keep original hisysevent call sites compiling.
+// Real adaptation should use SharingHisysevent + ConnectionStage/StageResType (see sharing_hisysevent.h).
+enum class BIZSceneType {
+    WFD_SOURCE_PLAY,
+};
+
+enum class BIZSceneStage {
+    WFD_SOURCE_PLAY_TCP_SERVER,
+    WFD_SOURCE_PLAY_RECV_M1_RSP,
+    WFD_SOURCE_PLAY_RECV_M2_REQ,
+    WFD_SOURCE_PLAY_RECV_M3_RSP,
+    WFD_SOURCE_PLAY_RECV_M4_RSP,
+    WFD_SOURCE_PLAY_RECV_M5_RSP,
+    WFD_SOURCE_PLAY_RECV_M6_REQ,
+    WFD_SOURCE_PLAY_RECV_M7_REQ,
+    WFD_SOURCE_PLAY_SEND_M1_REQ,
+    WFD_SOURCE_PLAY_SEND_M2_RSP,
+    WFD_SOURCE_PLAY_SEND_M3_REQ,
+    WFD_SOURCE_PLAY_SEND_M4_REQ,
+    WFD_SOURCE_PLAY_SEND_M5_REQ,
+    WFD_SOURCE_PLAY_SEND_M6_RSP,
+    WFD_SOURCE_PLAY_SEND_M7_RSP,
+};
+
+enum class BlzErrorCode {
+    ERROR_FAIL = 1,
+};
+
+constexpr int WFD_SOURCE = 0;
+
+class SharingHiSysEvent {
+public:
+    using Ptr = std::shared_ptr<SharingHiSysEvent>;
+
+    SharingHiSysEvent(BIZSceneType, int) {}
+
+    void SetPeerMac(const std::string &) const {}
+
+    void ReportStart(const std::string &, BIZSceneStage) const {}
+
+    void ReportEnd(const std::string &, BIZSceneStage) const {}
+
+    void ReportEnd(const std::string &, BIZSceneStage, BlzErrorCode) const {}
+
+    void Report(const std::string &, BIZSceneStage) const {}
+
+    void Report(const std::string &, BIZSceneStage, StageResType) const {}
+};
+
 class WfdSourceSession : public BaseSession,
                          public IServerCallback,
                          public std::enable_shared_from_this<WfdSourceSession> {
@@ -143,7 +192,7 @@ private:
     VideoFormat videoFormat_ = VIDEO_1920X1080_30;
     WfdSessionState wfdState_ = WfdSessionState::M0;
 
-    SharingHisysevent::Ptr sysEvent_ = nullptr;
+    SharingHiSysEvent::Ptr sysEvent_ = nullptr;
     NetworkFactory::ServerPtr rtspServerPtr_ = nullptr;
     std::weak_ptr<INetworkSession> sessionPtr_;
 };

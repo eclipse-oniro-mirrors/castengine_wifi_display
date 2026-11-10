@@ -63,6 +63,8 @@ enum WfdMsgId {
     WFD_BLACK_EDGE_ENABLE_REQ,
     WFD_BLACK_EDGE_RECT_CHANGE_REQ,
     WFD_BLACK_EDGE_CROP_INFO_REQ,
+    WFD_AUDIO_ENABLE_REQ,
+    WFD_AUDIO_ON_INTERRUPT_MSG,
     // domain msg
 };
 
@@ -657,6 +659,28 @@ struct WfdBlackEdgeEnableReq : public BaseMsg {
             this->isEnable = rReq.isEnable;
             this->deviceId = rReq.deviceId;
         }
+ 
+        return *this;
+    }
+ 
+    IPC_BIND_ATTR(isEnable, deviceId)
+ 
+    bool isEnable;
+    std::string deviceId;
+};
+
+struct WfdAudioEnableReq : public BaseMsg {
+    enum { MSG_ID = WfdMsgId::WFD_AUDIO_ENABLE_REQ };
+
+    int32_t GetMsgId() final { return MSG_ID; }
+    WfdAudioEnableReq() = default;
+    explicit WfdAudioEnableReq(const WfdAudioEnableReq &rReq){};
+    WfdAudioEnableReq &operator=(const WfdAudioEnableReq &rReq)
+    {
+        if (this != &rReq) {
+            this->isEnable = rReq.isEnable;
+            this->deviceId = rReq.deviceId;
+        }
 
         return *this;
     }
@@ -680,6 +704,17 @@ struct WfdBlackEdgeCropInfoReq : public BaseMsg {
 
     BlackEdgeCropInfo blackEdgeCropInfo;
     std::string deviceId;
+};
+
+struct WfdAudioOnInterruptMsg : public BaseMsg {
+    enum { MSG_ID = WfdMsgId::WFD_AUDIO_ON_INTERRUPT_MSG };
+
+    int32_t GetMsgId() final { return MSG_ID; }
+    WfdAudioOnInterruptMsg() = default;
+
+    IPC_BIND_ATTR(audioInterruptEvent)
+
+    AudioInterruptEvent audioInterruptEvent;
 };
 
 } // namespace Sharing

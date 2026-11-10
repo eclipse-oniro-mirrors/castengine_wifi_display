@@ -99,6 +99,7 @@ private:
     SharingErrorCode HandleAppendSurface(SharingEvent &event);
     SharingErrorCode HandleRemoveSurface(SharingEvent &event);
     SharingErrorCode HandleSetKeyRedirect(SharingEvent &event);
+    SharingErrorCode HandleSetAudioEnable(SharingEvent &event);
 
 private:
     uint32_t srcContextId_ = INVALID_ID;

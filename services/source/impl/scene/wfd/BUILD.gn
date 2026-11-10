@@ -72,6 +72,7 @@ ohos_source_set("sharing_wfd_source_scene_srcs") {
     "window_manager:libdm",
     "media_foundation:media_foundation",
     "wifi:wifi_sdk",
+    "json:nlohmann_json_static",
   ]
 
   subsystem_name = "castplus"

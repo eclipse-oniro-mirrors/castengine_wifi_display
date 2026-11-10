@@ -17,9 +17,11 @@
 #include <chrono>
 #include "common/common_macro.h"
 #include "common/const_def.h"
+#include "common/event_channel.h"
 #include "common/event_comm.h"
 #include "common/media_log.h"
 #include "magic_enum.hpp"
+#include "media_controller.h"
 #include "utils/data_buffer.h"
 
 namespace OHOS {
@@ -74,7 +76,8 @@ bool AudioPlayController::Start(BufferDispatcher::Ptr &dispatcher)
         isAudioRunning_ = true;
         dispatcher->AttachReceiver(bufferReceiver_);
         StartAudioThread();
-        audioPlayer_->SetAudioFocusChangeCallback([this](bool hasFocus) { this->SetAudioFocusState(hasFocus); });
+        audioPlayer_->SetAudioOnInterruptCallback(
+            [this](AudioInterruptEvent &event) { this->HandleAudioOnInterrupt(event); });
     } else {
         return false;
     }
@@ -207,15 +210,17 @@ void AudioPlayController::DropOneFrame()
     }
 }
 
-void AudioPlayController::SetAudioFocusState(bool hasFocus)
+void AudioPlayController::HandleAudioOnInterrupt(AudioInterruptEvent &audioInterruptEvent)
 {
-    if (hasFocus) {
+    SHARING_LOGI("handle audio interrupt, eventType: %{public}d, forceType: %{public}d, hintType: %{public}d",
+                 audioInterruptEvent.eventType, audioInterruptEvent.forceType, audioInterruptEvent.hintType);
+    if (audioInterruptEvent.hintType == AudioStandard::InterruptHint::INTERRUPT_HINT_RESUME) {
         if (!hasAudioFocus_.load()) {
             SHARING_LOGI("Audio focus regained");
             hasAudioFocus_.store(true);
             focusTimer_.StopTimer();
         }
-    } else {
+    } else if (audioInterruptEvent.hintType == AudioStandard::InterruptHint::INTERRUPT_HINT_PAUSE) {
         if (hasAudioFocus_.load()) {
             SHARING_LOGW("Audio focus lost");
             hasAudioFocus_.store(false);
@@ -223,6 +228,31 @@ void AudioPlayController::SetAudioFocusState(bool hasFocus)
                                    [this]() { this->OnAudioFocusTimeout(); });
         }
     }
+    NotifyAudioOnInterrupt(audioInterruptEvent);
+}
+
+void AudioPlayController::SetMediaController(std::shared_ptr<MediaController> mediaController)
+{
+    mediaController_ = mediaController;
+}
+
+void AudioPlayController::NotifyAudioOnInterrupt(AudioInterruptEvent &audioInterruptEvent)
+{
+    SHARING_LOGI("notify audio on interrupt, hintType:%{public}d", audioInterruptEvent.hintType);
+    auto mediaController = mediaController_.lock();
+    if (!mediaController) {
+        SHARING_LOGW("mediaController is null");
+        return;
+    }
+
+    auto eventMsg = std::make_shared<EventMsg>();
+    auto statusMsg = std::make_shared<ProsumerStatusMsg>();
+    statusMsg->eventMsg = eventMsg;
+    statusMsg->status = CONNTROLLER_NOTIFY_AUDIO_ON_INTERRUPT;
+    statusMsg->errorCode = ERR_OK;
+    statusMsg->audioInterruptEvent = audioInterruptEvent;
+
+    mediaController->OnPlayControllerNotify(statusMsg);
 }
 
 void AudioPlayController::OnAudioFocusTimeout()

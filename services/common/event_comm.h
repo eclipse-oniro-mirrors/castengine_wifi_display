@@ -50,6 +50,7 @@
     EVENT_AGENT_STATE_PROSUMER_INIT, EVENT_AGENT_STATE_PROSUMER_STARTED, EVENT_AGENT_PROSUMER_COMMON,                 \
     EVENT_AGENT_SET_BLACK_EDGE_ENABLE, EVENT_AGENT_BLACK_EDGE_RECT, EVENT_AGENT_BLACK_EDGE_CROP_INFO
 
+
 #define EVENT_SESSION EVENT_SESSION_BASE = MAKE_EVENT_TYPE(3, 0), EVENT_SESSION_INIT, EVENT_SESSION_TEARDOWN
 #define EVENT_MEDIA                                                                                                   \
     EVENT_MEDIA_BASE = MAKE_EVENT_TYPE(4, 0), EVENT_MEDIA_CHANNEL_CREATE, EVENT_MEDIA_CHANNEL_DESTROY,                \
@@ -68,7 +69,8 @@
     EVENT_INTERACTION_BASE = MAKE_EVENT_TYPE(6, 0), EVENT_INTERACTIONMGR_REMOVE_INTERACTION,                         \
     EVENT_INTERACTION_MSG_ERROR, EVENT_INTERACTION_STATE_AGENT_DESTROYED, EVENT_INTERACTION_STATE_CONTEXT_DESTROYED, \
     EVENT_INTERACTIONMGR_DESTROY_INTERACTION, EVENT_INTERACTION_ACCELERATION_DONE,                                   \
-    EVENT_INTERACTION_STATE_REMOVE_SURFACE, EVENT_INTERACTION_DECODER_DIED, EVENT_INTERACTION_BLACK_EDGE_RECT
+    EVENT_INTERACTION_STATE_REMOVE_SURFACE, EVENT_INTERACTION_DECODER_DIED,                                          \
+    EVENT_INTERACTION_AUDIO_ON_INTERRUPT
 
 #define EVENT_CONFIGURE                                                                            \
     EVENT_CONFIGURE_BASE = MAKE_EVENT_TYPE(7, 0), EVENT_CONFIGURE_READY, EVENT_CONFIGURE_INTERACT, \
@@ -172,6 +174,15 @@ struct BlackEdgeCropInfo {
     int32_t displayHeight;
 };
 
+struct AudioInterruptEvent {
+    
+    IPC_BIND_ATTR(eventType, forceType, hintType)
+
+    int32_t eventType;
+    int32_t forceType;
+    int32_t hintType;
+};
+
 struct ContextEventMsg : public EventMsg {
     using Ptr = std::shared_ptr<ContextEventMsg>;
 
@@ -194,6 +205,8 @@ struct AgentEventMsg : public ContextEventMsg {
     bool isBlackEdgeEnable;
     BlackEdgeCropRect blackEdgeRect;
     BlackEdgeCropInfo blackEdgeCropInfo;
+    bool isAudioEnable;
+    AudioInterruptEvent audioInterruptEvent;
 };
 
 struct SessionEventMsg : public AgentEventMsg {
@@ -225,6 +238,8 @@ struct SessionStatusMsg : public AgentStatusMsg {
     BlackEdgeCropRect blackEdgeRect;
     BlackEdgeCropInfo blackEdgeCropInfo;
     std::string localIp;
+    bool isAudioEnable;
+    AudioInterruptEvent audioInterruptEvent;
 };
 
 struct WindowProperty {
@@ -254,6 +269,7 @@ struct InteractionEventMsg : public EventMsg {
     uint64_t surfaceId = INVALID_ID;
     AgentType agentType = NONE_AGENT;
     BlackEdgeCropRect blackEdgeRect;
+    AudioInterruptEvent audioInterruptEvent;
 };
 
 struct AudioTrack {

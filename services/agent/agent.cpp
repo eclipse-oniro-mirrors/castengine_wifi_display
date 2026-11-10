@@ -193,6 +193,14 @@ int32_t Agent::HandleEvent(SharingEvent &event)
             statusMsg->surfaceId = inputMsg->surfaceId;
             SendInteractionEvent(statusMsg, EVENT_INTERACTION_DECODER_DIED);
             break;
+        case EventType::EVENT_AGENT_SET_AUDIO_ENABLE:
+            statusMsg->isAudioEnable = inputMsg->isAudioEnable;
+            SendChannelSetAudioEnableEvent(statusMsg, EVENT_MEDIA_CHANNEL_SET_AUDIO_ENABLE);
+            break;
+        case EventType::EVENT_AGENT_AUDIO_ON_INTERRUPT:
+            statusMsg->audioInterruptEvent = inputMsg->audioInterruptEvent;
+            SendInteractionEvent(statusMsg, EVENT_INTERACTION_AUDIO_ON_INTERRUPT);
+            break;
         default: {
             if (session_) {
                 session_->HandleEvent(event);
@@ -445,6 +453,7 @@ void Agent::SendInteractionEvent(SessionStatusMsg::Ptr &statusMsg, EventType eve
         interactionMsg->errorCode = statusMsg->msg->errorCode;
         interactionMsg->requestId = statusMsg->msg->requestId;
         interactionMsg->surfaceId = statusMsg->surfaceId;
+        interactionMsg->audioInterruptEvent = statusMsg->audioInterruptEvent;
 
         auto agentMsg = std::make_shared<AgentStatusMsg>();
         RETURN_IF_NULL(agentMsg);
@@ -524,6 +533,13 @@ void Agent::SendChannelSetVolumeEvent(SessionStatusMsg::Ptr &statusMsg, EventTyp
 {
     SendChannelCommonEvent<ChannelSetVolumeEventMsg>(
         statusMsg, eventType, [](auto &channelMsg, auto &statusMsg) { channelMsg->volume = statusMsg->volume; });
+}
+
+void Agent::SendChannelSetAudioEnableEvent(SessionStatusMsg::Ptr &statusMsg, EventType eventType)
+{
+    SendChannelCommonEvent<ChannelSetAudioEnableEventMsg>(
+        statusMsg, eventType,
+        [](auto &channelMsg, auto &statusMsg) { channelMsg->isAudioEnable = statusMsg->isAudioEnable; });
 }
 
 void Agent::SendContextEvent(SessionStatusMsg::Ptr &statusMsg, EventType eventType)

@@ -737,6 +737,14 @@ void WfdSinkScene::OnRequest(std::shared_ptr<BaseMsg> msg, std::shared_ptr<BaseM
             reply = std::static_pointer_cast<BaseMsg>(rsp);
             break;
         }
+        case WfdAudioEnableReq::MSG_ID: {
+            auto data = std::static_pointer_cast<WfdAudioEnableReq>(msg);
+            auto rsp = std::make_shared<WfdCommonRsp>();
+
+            rsp->ret = HandleSetAudioEnable(data, rsp);
+            reply = std::static_pointer_cast<BaseMsg>(rsp);
+            break;
+        }
         default:
             SHARING_LOGW("unknown msg request.");
             break;
@@ -1344,6 +1352,29 @@ int32_t WfdSinkScene::HandleDeleteBoundDevice(std::shared_ptr<WfdDeleteBoundDevi
     return 0;
 }
 
+int32_t WfdSinkScene::HandleSetAudioEnable(std::shared_ptr<WfdAudioEnableReq> &msg,
+                                           std::shared_ptr<WfdCommonRsp> &reply)
+{
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
+    (void)reply;
+    RETURN_INVALID_IF_NULL(msg);
+    auto sharingAdapter = sharingAdapter_.lock();
+    RETURN_INVALID_IF_NULL(sharingAdapter);
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        auto itemDev = devConnectionMap_.find(msg->deviceId);
+        if (itemDev == devConnectionMap_.end() || itemDev->second == nullptr) {
+            lock.unlock();
+            SHARING_LOGE("can not find dev, mac: %{private}s.", GetAnonymousMAC(msg->deviceId).c_str());
+            OnInnerError(0, 0, SharingErrorCode::ERR_BAD_PARAMETER, "HandleSetAudioEnable can't find dev");
+            return -1;
+        }
+
+        SHARING_LOGI("set audio enable:%{public}s.", msg->isEnable ? "true" : "false");
+        return sharingAdapter->SetAudioEnable(itemDev->second->contextId, itemDev->second->agentId, msg->isEnable);
+    }
+}
+
 void WfdSinkScene::RegisterWfdAbilityListener()
 {
     SHARING_LOGI("%{public}s.", __FUNCTION__);
@@ -1870,6 +1901,13 @@ void WfdSinkScene::OnInnerEvent(SharingEvent &event)
             NotifyIsPcSource();
             break;
         }
+        case EventType::EVENT_INTERACTION_AUDIO_ON_INTERRUPT: {
+            auto msg = ConvertEventMsg<InteractionEventMsg>(event);
+            if (msg) {
+                OnAudioInterrupt(msg->audioInterruptEvent);
+            }
+            break;
+        }
         default:
             SHARING_LOGI("none process case.");
             break;
@@ -1964,6 +2002,20 @@ void WfdSinkScene::NotifyIsPcSource()
     RETURN_IF_NULL(ipcAdapter);
 
     auto msg = std::make_shared<WfdIsPcSourceMsg>();
+    auto reply = std::static_pointer_cast<BaseMsg>(std::make_shared<WfdCommonRsp>());
+    ipcAdapter->SendRequest(msg, reply);
+}
+
+void WfdSinkScene::OnAudioInterrupt(AudioInterruptEvent &info)
+{
+    SHARING_LOGI("audio interrupt, eventType: %{public}d, forceType: %{public}d, hintType: %{public}d", info.eventType,
+                 info.forceType, info.hintType);
+    auto ipcAdapter = ipcAdapter_.lock();
+    RETURN_IF_NULL(ipcAdapter);
+
+    auto msg = std::make_shared<WfdAudioOnInterruptMsg>();
+    msg->audioInterruptEvent = info;
+    
     auto reply = std::static_pointer_cast<BaseMsg>(std::make_shared<WfdCommonRsp>());
     ipcAdapter->SendRequest(msg, reply);
 }

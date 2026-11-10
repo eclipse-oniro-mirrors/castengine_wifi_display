@@ -31,6 +31,7 @@ struct ProsumerStatusMsg {
     MediaType mediaType = MEDIA_TYPE_AV;
     EventMsg::Ptr eventMsg = nullptr;
     SharingErrorCode errorCode = ERR_OK;
+    AudioInterruptEvent audioInterruptEvent;
 };
 
 struct ChannelEventMsg : public EventMsg {
@@ -73,6 +74,12 @@ struct ChannelSetKeyRedirectEventMsg : public ChannelEventMsg {
 
     bool keyRedirect;
     uint64_t surfaceId = 0;
+};
+
+struct ChannelSetAudioEnableEventMsg : public ChannelEventMsg {
+    using Ptr = std::shared_ptr<ChannelSetAudioEnableEventMsg>;
+
+    bool isAudioEnable;
 };
 
 } // namespace Sharing

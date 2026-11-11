@@ -205,7 +205,7 @@ std::map<std::string, std::string> ParseHwDeviceTLV(std::vector<uint8_t> &extra)
 
 int32_t ParseHwDeviceInfo(const std::string &wfdInfo, WfdCastDeviceInfo &castDevInfo)
 {
-    SHARING_LOGI("parseHwDeviceInfo in, info size is: %{public}ld", wfdInfo.size());
+    SHARING_LOGI("parseHwDeviceInfo in, info size is: %{public}zu", wfdInfo.size());
     if (wfdInfo.size() < MAC_STRING_LENGTH + WFD_DEVICE_INFO_LENGTH + HW_DEVICE_MIN_IE_LENGTH) {
         SHARING_LOGE("wfdInfo info length should be more than 29");
         return PARSE_FAIL;

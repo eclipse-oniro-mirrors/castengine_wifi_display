@@ -33,8 +33,6 @@
 namespace OHOS {
 namespace Sharing {
 
-// TODO: temporary no-op shim to keep original hisysevent call sites compiling.
-// Real adaptation should use SharingHisysevent + ConnectionStage/StageResType (see sharing_hisysevent.h).
 enum class BIZSceneType {
     WFD_SOURCE_PLAY,
 };

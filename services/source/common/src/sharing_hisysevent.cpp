@@ -12,114 +12,84 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "sharing_hisysevent.h"
-#include "hisysevent.h"
-#ifdef HISYSEVENT_DEBUG
+
 #include "sharing_log.h"
-#endif
+#include "sharing_hisysevent.h"
+#include "securec.h"
+
 namespace OHOS {
 namespace Sharing {
-static constexpr char SHARING_DFX_DOMAIN_NAME[] = "WIFI_DISPLAY";
-static constexpr char ORG_PKG[] = "sharing_service";
-static constexpr char HOST_PKG[] = "cast_engine_service";
-static constexpr char EVENT_NAME[] = "MIRACAST_BEHAVIOR";
 
-static const uint8_t WIFI_DISPLAY_SYSTEM_ID = 208;
-static const uint8_t WIFI_DISPLAY_MODULE_ID = 19;
-
-SharingHiSysEvent::SharingHiSysEvent(BIZSceneType scene, std::string callPkg)
-    : bizScene_(static_cast<int32_t>(scene)), toCallPkg_(callPkg)
-{}
-
-SharingHiSysEvent::~SharingHiSysEvent()
+bool SharingHisysevent::GetWifiLinkedInfo(Wifi::WifiLinkedInfo& wifiInfo)
 {
-    ReportEnd(__func__, lastStage_, BlzErrorCode::ERROR_FAIL);
-}
-
-void SharingHiSysEvent::ReportStart(std::string funcName, BIZSceneStage stage)
-{
-#ifdef HISYSEVENT_DEBUG
-    SHARING_LOGE("[FUNC:%s][%s][%s][BIZ_SCENE:%d][BIZ_STAGE:%d][BIZ_STATE:%d]", funcName.c_str(),
-                 SHARING_DFX_DOMAIN_NAME, EVENT_NAME, bizScene_, static_cast<int32_t>(stage),
-                 static_cast<int32_t>(BIZStateType::BIZ_STATE_BEGIN));
-#endif
-    HiSysEventWrite(SHARING_DFX_DOMAIN_NAME, EVENT_NAME, HiviewDFX::HiSysEvent::EventType::BEHAVIOR, "ORG_PKG", ORG_PKG,
-                    "HOST_PKG", HOST_PKG, "FUNC", funcName, "BIZ_SCENE", bizScene_, "BIZ_STATE",
-                    static_cast<int32_t>(BIZStateType::BIZ_STATE_BEGIN), "BIZ_STAGE", static_cast<int32_t>(stage),
-                    "STAGE_RES", static_cast<int32_t>(StageResType::STAGE_RES_IDLE), "ERROR_CODE", 0, "TO_CALL_PKG",
-                    toCallPkg_, "LOCAL_MAC", localMac_, "PEER_MAC", peerMac_);
-    lastStage_ = stage;
-}
-
-void SharingHiSysEvent::ReportEnd(std::string funcName, BIZSceneStage stage, BlzErrorCode errCode)
-{
-    if (sceneDisposed) {
-        return;
+    std::shared_ptr<Wifi::WifiDevice> wifiDevicePtr = Wifi::WifiDevice::GetInstance(WIFI_DEVICE_ABILITY_ID);
+    if (wifiDevicePtr == nullptr) {
+        SHARING_LOGE("get wifidevice failed.");
+        return false;
     }
-
-#ifdef HISYSEVENT_DEBUG
-    SHARING_LOGE("[FUNC:%s][%s][%s][BIZ_SCENE:%d][BIZ_STAGE:%d][BIZ_STATE:%d]", funcName.c_str(),
-                 SHARING_DFX_DOMAIN_NAME, EVENT_NAME, bizScene_, static_cast<int32_t>(stage),
-                 static_cast<int32_t>(BIZStateType::BIZ_STATE_END));
-#endif
-    int32_t stageResType = static_cast<int32_t>(StageResType::STAGE_RES_SUCCESS);
-    if (errCode != BlzErrorCode::ERROR_NONE) {
-        stageResType = static_cast<int32_t>(StageResType::STAGE_RES_FAILED);
+    bool isActive = false;
+    wifiDevicePtr->IsWifiActive(isActive);
+    if (!isActive) {
+        SHARING_LOGE("wifi is not active.");
+        return false;
     }
-
-    int32_t err = (WIFI_DISPLAY_SYSTEM_ID << 24) | (WIFI_DISPLAY_MODULE_ID << 18) | static_cast<int32_t>(errCode);
-    HiSysEventWrite(SHARING_DFX_DOMAIN_NAME, EVENT_NAME, HiviewDFX::HiSysEvent::EventType::BEHAVIOR, "ORG_PKG", ORG_PKG,
-                    "HOST_PKG", HOST_PKG, "FUNC", funcName, "BIZ_SCENE", bizScene_, "BIZ_STATE",
-                    static_cast<int32_t>(BIZStateType::BIZ_STATE_END), "BIZ_STAGE", static_cast<int32_t>(stage),
-                    "STAGE_RES", stageResType, "ERROR_CODE", err, "TO_CALL_PKG", toCallPkg_, "LOCAL_MAC", localMac_,
-                    "PEER_MAC", peerMac_);
-    lastStage_ = stage;
-    sceneDisposed = true;
-}
-
-void SharingHiSysEvent::Report(std::string funcName, BIZSceneStage stage, StageResType resType, std::string peerMac)
-{
-    auto tmpPeerMac = peerMac.empty() ? peerMac_ : peerMac;
-#ifdef HISYSEVENT_DEBUG
-    SHARING_LOGE("[FUNC:%s][%s][%s][BIZ_SCENE:%d][BIZ_STAGE:%d][PEERMAC:%s]", funcName.c_str(), SHARING_DFX_DOMAIN_NAME,
-                 EVENT_NAME, bizScene_, static_cast<int32_t>(stage), tmpPeerMac.c_str());
-#endif
-    HiSysEventWrite(SHARING_DFX_DOMAIN_NAME, EVENT_NAME, HiviewDFX::HiSysEvent::EventType::BEHAVIOR, "ORG_PKG", ORG_PKG,
-                    "HOST_PKG", HOST_PKG, "FUNC", funcName, "BIZ_SCENE", bizScene_, "BIZ_STAGE",
-                    static_cast<int32_t>(stage), "STAGE_RES", static_cast<int32_t>(resType), "ERROR_CODE",
-                    static_cast<int32_t>(BlzErrorCode::ERROR_NONE), "TO_CALL_PKG", toCallPkg_, "LOCAL_MAC", localMac_,
-                    "PEER_MAC", tmpPeerMac);
-    lastStage_ = stage;
-}
-
-void SharingHiSysEvent::SetCallPkg(const std::string callPkg)
-{
-    toCallPkg_ = callPkg;
-}
-
-void SharingHiSysEvent::SetLocalMac(const std::string mac)
-{
-    localMac_ = mac;
-}
-
-void SharingHiSysEvent::SetPeerMac(const std::string mac)
-{
-    peerMac_ = mac;
-}
-
-void SharingHiSysEvent::ChangeScene(BIZSceneType scene)
-{
-    if (!sceneDisposed) {
-        this->ReportEnd(__func__, lastStage_, BlzErrorCode::ERROR_FAIL);
-    } else {
-        sceneDisposed = false;
+    ErrCode ret = wifiDevicePtr->GetLinkedInfo(wifiInfo);
+    if (ret != Wifi::WIFI_OPT_SUCCESS) {
+        SHARING_LOGE("get linked info failed ret = %{public}d.", ret);
+        return false;
     }
-    bizScene_ = static_cast<int32_t>(scene);
+    return true;
 }
 
-int32_t SharingHiSysEvent::GetScene() const
+bool SharingHisysevent::GetP2pGroupInfo(Wifi::WifiP2pGroupInfo& groupInfo)
 {
-    return bizScene_;
+    std::shared_ptr<Wifi::WifiP2p> wifiP2pPtr = Wifi::WifiP2p::GetInstance(WIFI_P2P_ABILITY_ID);
+    if (wifiP2pPtr == nullptr) {
+        SHARING_LOGE("get wifip2p failed.");
+        return false;
+    }
+    ErrCode ret = wifiP2pPtr->GetCurrentGroup(groupInfo);
+    if (ret != Wifi::WIFI_OPT_SUCCESS) {
+        SHARING_LOGE("get p2p info failed ret = %{public}d.", ret);
+        return false;
+    }
+    return true;
 }
+
+void SharingHisysevent::ReportFrequency(const HisyseventInfo& hisyseventInfo)
+{
+    int32_t groupOwner = -1;
+    int32_t wifiFrequency = 0;
+    int32_t p2pFrequency = 0;
+    Wifi::WifiLinkedInfo wifiInfo;
+    if (GetWifiLinkedInfo(wifiInfo)) {
+        wifiFrequency = wifiInfo.frequency;
+    }
+    Wifi::WifiP2pGroupInfo groupInfo;
+    if (GetP2pGroupInfo(groupInfo)) {
+        groupOwner = groupInfo.IsGroupOwner() ? 0 : 1;
+        p2pFrequency = groupInfo.GetFrequency();
+    }
+    SHARING_LOGI("groupOwner: %{public}d, wifiFrequency: %{public}d, p2pFrequency: %{public}d", groupOwner,
+                 wifiFrequency, p2pFrequency);
+    HiSysEventWrite(
+        DOMAIN_WIFI_DISPLAY,
+        EVENT_NAME,
+        EVENT_TYPE,
+        "ORG_PKG", PKG_SHARING,
+        "HOST_PKG", HOST_PKG_SHARING,
+        "TO_CALL_PKG", hisyseventInfo.toCallpkg,
+        "FUNC", hisyseventInfo.func,
+        "BIZ_SCENE", static_cast<int32_t>(BizScene::CONNECTION),
+        "BIZ_STAGE", static_cast<int32_t>(hisyseventInfo.stage),
+        "STAGE_RES", static_cast<int32_t>(hisyseventInfo.stageRes),
+        "BIZ_STATE", static_cast<int32_t>(BIZStateType::BIZ_STATE_BEGIN),
+        "PEER_DEV_VER", hisyseventInfo.deviceName,
+        "PEER_DEV_TYPE", hisyseventInfo.deviceType,
+        "GROUP_OWNER", groupOwner,
+        "WIFI_FREQ_START", wifiFrequency,
+        "P2P_FREQ_START", p2pFrequency);
+}
+
 } // namespace Sharing
 } // namespace OHOS

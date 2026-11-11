@@ -29,7 +29,22 @@ constexpr uint32_t FOREGROUND_SURFACE_MAX_NUMBER = 2;
 
 enum WfdErrorCode {};
 
-enum ConnectionState { CONNECTED, DISCONNECTED, INIT, READY, PLAYING };
+enum ConnectionState {
+    CONNECTING,
+    CONNECTED,
+    PAUSED,
+    PLAYING,
+    DISCONNECTING,
+    DISCONNECTED,
+    STREAM,
+    MIRROR_TO_UI,
+    UI_TO_MIRROR,
+    UICAST,
+    AUTHING,
+    MIRROR_TO_STREAM,
+    STREAM_TO_MIRROR,
+    DEVICE_STATE_MAX,
+};
 
 struct SinkConfig {
     uint32_t surfaceMaximum = 0;
@@ -57,6 +72,7 @@ struct ConnectionInfo {
     std::string deviceName;
     std::string primaryDeviceType;
     std::string secondaryDeviceType;
+    std::string udidHash;
 
     ConnectionState state;
     CodecId audioCodecId = CodecId::CODEC_AAC;

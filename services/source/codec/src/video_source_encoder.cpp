@@ -388,7 +388,7 @@ void VideoSourceEncoder::OnError(MediaAVCodec::AVCodecErrorType errorType, int32
 
 void VideoSourceEncoder::UpdateBitrate(int64_t bitrate)
 {
-    SHARING_LOGI("Update bitrate, nowBitrate = %{public}lld.", static_cast<long long>(bitrate));
+    SHARING_LOGI("Update bitrate, nowBitrate = %{public}" PRId64".", bitrate);
     if (videoEncoder_) {
         Format format{};
         format.PutLongValue("bitrate", bitrate);

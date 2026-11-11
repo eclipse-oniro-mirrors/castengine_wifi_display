@@ -28,8 +28,32 @@ struct ScreenCaptureSessionEventMsg : public SessionEventMsg {
     uint64_t screenId = 0;
     MediaType mediaType;
     CodecId codecId;
+    CodecId videoCodecId = CodecId::CODEC_H264;
     AudioFormat audioFormat = AUDIO_8000_8_1;
     VideoFormat videoFormat = VIDEO_1280X720_30;
+};
+
+struct SetAudioSessionEventMsg : public SessionEventMsg {
+    using Ptr = std::shared_ptr<SetAudioSessionEventMsg>;
+    bool isAudioOn = true;
+};
+
+struct SetDisplaySessionEventMsg : public SessionEventMsg {
+    using Ptr = std::shared_ptr<SetDisplaySessionEventMsg>;
+    uint32_t projectMode = 0;
+    uint32_t projectRotation = 0;
+    Rect mainScreenRegion;
+};
+
+struct CommonSessionEventMsg : public SessionEventMsg {
+    using Ptr = std::shared_ptr<CommonSessionEventMsg>;
+    int32_t eventId = 0;
+    std::string eventParam;
+};
+
+struct AppendSurfaceSessionEventMsg : public SessionEventMsg {
+    using Ptr = std::shared_ptr<AppendSurfaceSessionEventMsg>;
+    sptr<IRemoteObject> surface;
 };
 
 struct ScreenCaptureConsumerEventMsg : public ChannelEventMsg {
@@ -38,6 +62,40 @@ struct ScreenCaptureConsumerEventMsg : public ChannelEventMsg {
     uint64_t screenId = 0;
     AudioTrack audioTrack;
     VideoTrack videoTrack;
+    CodecId videoCodecId = CodecId::CODEC_H264;
+};
+
+struct ScreenCaptureConsumerAudioEventMsg : public ChannelEventMsg {
+    using Ptr = std::shared_ptr<ScreenCaptureConsumerEventMsg>;
+    bool isAudioOn = true;
+};
+
+struct ScreenCaptureConsumerDisplayEventMsg : public ChannelEventMsg {
+    using Ptr = std::shared_ptr<ScreenCaptureConsumerEventMsg>;
+    uint32_t projectMode = 0;
+    uint32_t projectRotation = 0;
+    Rect mainScreenRegion;
+};
+
+struct SetRefreshRateSessionEventMsg : public SessionEventMsg {
+    using Ptr = std::shared_ptr<SetRefreshRateSessionEventMsg>;
+    int32_t interval = 0;
+};
+
+struct ScreenCaptureConsumerRefreshEventMsg : public ChannelEventMsg {
+    using Ptr = std::shared_ptr<ScreenCaptureConsumerRefreshEventMsg>;
+    int32_t interval = 0;
+};
+
+struct ScreenCaptureConsumerCommonEventMsg : public ChannelEventMsg {
+    using Ptr = std::shared_ptr<ScreenCaptureConsumerCommonEventMsg>;
+    int32_t eventId = 0;
+    std::string eventParam;
+};
+
+struct ScreenCaptureConsumerSurfaceEventMsg : public ChannelEventMsg {
+    using Ptr = std::shared_ptr<ScreenCaptureConsumerSurfaceEventMsg>;
+    sptr<IRemoteObject> surface;
 };
 
 } // namespace Sharing

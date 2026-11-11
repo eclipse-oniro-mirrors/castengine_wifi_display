@@ -47,7 +47,10 @@
     EVENT_AGENT_STATE_PROSUMER_RESUME, EVENT_AGENT_STATE_PROSUMER_DESTROY, EVENT_AGENT_STATE_PLAY_START,               \
     EVENT_AGENT_STATE_PLAY_STOP, EVENT_AGENT_PROSUMER_ERROR, EVENT_AGENT_CHANNEL_SETVOLUME, EVENT_AGENT_KEYMODE_START, \
     EVENT_AGENT_KEYMODE_STOP, EVENT_AGENT_ACCELERATION_DONE, EVENT_AGENT_DECODER_DIED,                                \
-    EVENT_AGENT_STATE_PROSUMER_INIT, EVENT_AGENT_AUDIO_ON_INTERRUPT, EVENT_AGENT_SET_AUDIO_ENABLE
+    EVENT_AGENT_STATE_PROSUMER_INIT, EVENT_AGENT_STATE_PROSUMER_STARTED, EVENT_AGENT_PROSUMER_COMMON,                 \
+    EVENT_AGENT_SET_BLACK_EDGE_ENABLE, EVENT_AGENT_BLACK_EDGE_RECT, EVENT_AGENT_BLACK_EDGE_CROP_INFO,               \
+    EVENT_AGENT_SET_AUDIO_ENABLE, EVENT_AGENT_AUDIO_ON_INTERRUPT
+
 
 #define EVENT_SESSION EVENT_SESSION_BASE = MAKE_EVENT_TYPE(3, 0), EVENT_SESSION_INIT, EVENT_SESSION_TEARDOWN
 #define EVENT_MEDIA                                                                                                   \
@@ -59,6 +62,7 @@
     EVENT_MEDIA_MIXPLAYER_DESTROY, EVENT_MEDIA_MIXPLAYER_START, EVENT_MEDIA_MIXPLAYER_STOP,                           \
     EVENT_MEDIA_CHANNEL_APPENDSURFACE, EVENT_MEDIA_CHANNEL_REMOVESURFACE, EVENT_MEDIA_CHANNEL_SETSCENETYPE,           \
     EVENT_MEDIA_CHANNEL_SETVOLUME, EVENT_MEDIA_CHANNEL_KEY_REDIRECT, EVENT_AGENT_STATE_WRITE_WARNING,                 \
+    EVENT_MEDIA_CHANNEL_SETBLACKEDGEENABLE, EVENT_MEDIA_CHANNEL_SETBLACKEDGECROPINFO,                                  \
     EVENT_MEDIA_CHANNEL_SET_AUDIO_ENABLE
 
 #define EVENT_SCHEDULER EVENT_SCHEDULER_BASE = MAKE_EVENT_TYPE(5, 0)
@@ -77,10 +81,14 @@
 #define EVENT_WFD                                                                             \
     EVENT_WFD_BASE = MAKE_EVENT_TYPE(9, 0), EVENT_WFD_MEDIA_INIT, EVENT_WFD_STATE_MEDIA_INIT, \
     EVENT_WFD_NOTIFY_RTSP_PLAYED, EVENT_WFD_NOTIFY_RTSP_TEARDOWN, EVENT_WFD_REQUEST_IDR,      \
-    EVENT_WFD_NOTIFY_IS_PC_SOURCE, EVENT_WFD_NOTIFY_TCP_SUCCESS
+    EVENT_WFD_NOTIFY_SET_REFRESHRATE, EVENT_WFD_NOTIFY_EVENT, EVENT_WFD_NOTIFY_IS_PC_SOURCE,  \
+    EVENT_WFD_NOTIFY_TCP_SUCCESS
 
 #define EVENT_SCREEN_CAPTURE    \
-    EVENT_SCREEN_CAPTURE_BASE = MAKE_EVENT_TYPE(11, 0), EVENT_SCREEN_CAPTURE_INIT
+    EVENT_SCREEN_CAPTURE_BASE = MAKE_EVENT_TYPE(11, 0), EVENT_SCREEN_CAPTURE_INIT, \
+    EVENT_SCREEN_CAPTURE_SET_AUDIO, EVENT_SCREEN_REQUEST_IDR,  \
+    EVENT_SCREEN_CAPTURE_SET_REFRESHRATE, EVENT_SCREEN_CAPTURE_SET_DISPLAY, \
+    EVENT_SCREEN_CAPTURE_COMMON, EVENT_SCREEN_CAPTURE_APPEND_SURFACE
 
 namespace OHOS {
 namespace Sharing {
@@ -146,6 +154,28 @@ struct EventMsg : public FromMsg,
     SharingErrorCode errorCode = ERR_OK;
 };
 
+struct BlackEdgeCropRect {
+
+    IPC_BIND_ATTR(cropTop, cropLeft, displayWidth, displayHeight, fullWidth, fullHeight)
+
+    int32_t cropTop;
+    int32_t cropLeft;
+    int32_t displayWidth;
+    int32_t displayHeight;
+    int32_t fullWidth;
+    int32_t fullHeight;
+};
+
+struct BlackEdgeCropInfo {
+
+    IPC_BIND_ATTR(top, left, displayWidth, displayHeight)
+
+    int32_t top;
+    int32_t left;
+    int32_t displayWidth;
+    int32_t displayHeight;
+};
+
 struct AudioInterruptEvent {
     
     IPC_BIND_ATTR(eventType, forceType, hintType)
@@ -164,6 +194,7 @@ struct ContextEventMsg : public EventMsg {
     sptr<Surface> surface = nullptr;
     AgentType agentType;
     MediaType mediaType;
+    std::string localIp;
 };
 
 struct AgentEventMsg : public ContextEventMsg {
@@ -173,6 +204,9 @@ struct AgentEventMsg : public ContextEventMsg {
     float volume;
     uint32_t prosumerId = INVALID_ID;
     SceneType sceneType;
+    bool isBlackEdgeEnable;
+    BlackEdgeCropRect blackEdgeRect;
+    BlackEdgeCropInfo blackEdgeCropInfo;
     bool isAudioEnable;
     AudioInterruptEvent audioInterruptEvent;
 };
@@ -202,6 +236,10 @@ struct SessionStatusMsg : public AgentStatusMsg {
     MediaType mediaType;
     SceneType sceneType;
     bool isPcSource;
+    bool isBlackEdgeEnable;
+    BlackEdgeCropRect blackEdgeRect;
+    BlackEdgeCropInfo blackEdgeCropInfo;
+    std::string localIp;
     bool isAudioEnable;
     AudioInterruptEvent audioInterruptEvent;
 };
@@ -232,6 +270,7 @@ struct InteractionEventMsg : public EventMsg {
     uint32_t contextId = INVALID_ID;
     uint64_t surfaceId = INVALID_ID;
     AgentType agentType = NONE_AGENT;
+    BlackEdgeCropRect blackEdgeRect;
     AudioInterruptEvent audioInterruptEvent;
 };
 

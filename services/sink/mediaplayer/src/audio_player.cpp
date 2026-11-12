@@ -141,10 +141,10 @@ void AudioPlayer::DropOneFrame()
     }
 }
 
-void AudioPlayer::SetAudioFocusChangeCallback(std::function<void(bool hasFocus)> callback)
+void AudioPlayer::SetAudioOnInterruptCallback(std::function<void(AudioInterruptEvent &)> callback)
 {
     if (audioSink_) {
-        audioSink_->SetAudioFocusChangeCallback(callback);
+        audioSink_->SetAudioOnInterruptCallback(callback);
     }
 }
 

@@ -105,6 +105,7 @@ private:
     void SendChannelKeyRedirectEvent(SessionStatusMsg::Ptr &statusMsg, EventType eventType);
     void SendChannelAppendSurfaceEvent(SessionStatusMsg::Ptr &statusMsg, EventType eventType);
     void SendChannelRemoveSurfaceEvent(SessionStatusMsg::Ptr &statusMsg, EventType eventType);
+    void SendChannelSetAudioEnableEvent(SessionStatusMsg::Ptr &statusMsg, EventType eventType);
 
 protected:
     bool destroy_ = false;

@@ -71,6 +71,10 @@ ohos_source_set("sharing_wfd_source_session_srcs") {
     "ipc:ipc_single",
     "hilog:libhilog",
     "media_foundation:media_foundation",
+    "samgr:samgr_proxy",
+    "hisysevent:libhisysevent",
+    "wifi:wifi_sdk",
+    "bounds_checking_function:libsec_shared",
   ]
 
   subsystem_name = "castplus"

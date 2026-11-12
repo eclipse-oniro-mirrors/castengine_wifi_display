@@ -114,6 +114,7 @@ void AudioAvCodecDecoder::Release()
     if (audioDecoder_ != nullptr) {
         audioDecoder_->Release();
         audioDecoder_->Reset();
+        audioDecoder_ = nullptr;
     }
 }
 

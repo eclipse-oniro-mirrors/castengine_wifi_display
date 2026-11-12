@@ -21,6 +21,9 @@
 
 namespace OHOS {
 namespace Sharing {
+
+constexpr int32_t FU_A_HEADER_SIZE = 2;
+
 class FuFlags {
 public:
 #if __BYTE_ORDER == __BIG_ENDIAN
@@ -130,6 +133,11 @@ bool RtpDecoderH264::UnpackFuA(const RtpPacket::Ptr &rtp, const uint8_t *ptr, ss
     RETURN_FALSE_IF_NULL(rtp);
     RETURN_FALSE_IF_NULL(ptr);
     RETURN_FALSE_IF_NULL(frame_);
+    if (size < FU_A_HEADER_SIZE) {
+        MEDIA_LOGW("Invalid FU-A payload size: %{public}zd", size);
+        gopDropped_ = true;
+        return false;
+    }
     uint8_t nalSuffix = *ptr & (~0x1F);
     FuFlags *fu = (FuFlags *)(ptr + 1);
     if (fu->startBit_) {

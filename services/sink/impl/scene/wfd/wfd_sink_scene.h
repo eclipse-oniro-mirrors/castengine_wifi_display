@@ -194,6 +194,8 @@ private:
                                   std::shared_ptr<WfdGetBoundDevicesRsp> &reply);
     int32_t HandleDeleteBoundDevice(std::shared_ptr<WfdDeleteBoundDeviceReq> &msg,
                                     std::shared_ptr<WfdCommonRsp> &reply);
+    int32_t HandleSetAudioEnable(std::shared_ptr<WfdAudioEnableReq> &msg, std::shared_ptr<WfdCommonRsp> &reply);
+    void OnAudioInterrupt(AudioInterruptEvent &info);
     void FillAndReportDeviceInfo(const ConnectionInfo &connectionInfo);
 
     void NotifyIsPcSource();

@@ -86,13 +86,16 @@ private:
 };
 
 unsigned long long GetThreadId();
+void SetThreadPriority(int threadId, int prio);
 uint64_t GetCurrentMillisecond();
 
 std::string ChangeCase(const std::string &value, bool lowerCase);
+
 std::string Trim(std::string &&s, const std::string &chars = " \r\n\t");
 std::string &Trim(std::string &s, const std::string &chars = " \r\n\t");
 
 std::vector<std::string> Split(const std::string &s, const char *delim);
+
 std::vector<std::string> SplitOnce(const std::string &s, const char *delim);
 
 uint16_t SwapEndian16(uint16_t value);
@@ -111,6 +114,8 @@ void SetLE32(void *p, uint32_t val);
 std::string GetAnonyDevName(const std::string &value);
 std::string GetAnonyString(const std::string &value);
 std::string GetLocalP2pAddress(const std::string &interface);
+
+void NoIPLog(const std::string &buf, bool isCommLog = false);
 std::string GetAnonymousIp(const std::string &ip);
 std::string GetAnonymousMAC(const std::string &mac);
 std::string GetAnonymousDeviceId(const std::string &deviceId);

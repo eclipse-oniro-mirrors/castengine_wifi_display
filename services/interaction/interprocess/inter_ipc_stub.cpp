@@ -32,6 +32,7 @@ InterIpcStub::~InterIpcStub()
 {
     SHARING_LOGD("trace.");
     sharedFromThis_.reset();
+    std::unique_lock<std::mutex> lock(mutex_);
     for (auto deathRecipient : deathRecipients_) {
         if (deathRecipient.second != nullptr) {
             deathRecipient.second->SetDeathListener(nullptr);
@@ -140,6 +141,7 @@ sptr<IRemoteObject> InterIpcStub::GetSubSystemAbility(std::string key, std::stri
 
 void InterIpcStub::CreateDeathListener(std::string key)
 {
+    std::unique_lock<std::mutex> lock(mutex_);
     if (deathRecipients_.find(key) != deathRecipients_.end()) {
         SHARING_LOGI("key: %{public}s.", key.c_str());
         if (sharedFromThis_ == nullptr) {

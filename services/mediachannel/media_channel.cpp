@@ -200,6 +200,9 @@ void MediaChannel::OnMediaControllerNotify(ProsumerStatusMsg::Ptr &msg)
         case CONNTROLLER_NOTIFY_KEYMOD_STOP:
             SendAgentEvent(msg, EVENT_AGENT_KEYMODE_STOP);
             break;
+        case CONNTROLLER_NOTIFY_AUDIO_ON_INTERRUPT:
+            SendAgentEvent(msg, EVENT_AGENT_AUDIO_ON_INTERRUPT);
+            break;
         default:
             break;
     }
@@ -308,6 +311,9 @@ int32_t MediaChannel::HandleEvent(SharingEvent &event)
             break;
         case EventType::EVENT_MEDIA_CHANNEL_KEY_REDIRECT:
             HandleSetKeyRedirect(event);
+            break;
+        case EventType::EVENT_MEDIA_CHANNEL_SET_AUDIO_ENABLE:
+            HandleSetAudioEnable(event);
             break;
         default: {
             auto channelMsg = ConvertEventMsg<ChannelEventMsg>(event);
@@ -928,6 +934,21 @@ SharingErrorCode MediaChannel::HandleResumeProducer(SharingEvent &event)
     return SharingErrorCode::ERR_GENERAL_ERROR;
 }
 
+SharingErrorCode MediaChannel::HandleSetAudioEnable(SharingEvent &event)
+{
+    SHARING_LOGD("trace.");
+    auto channelMsg = ConvertEventMsg<ChannelSetAudioEnableEventMsg>(event);
+    if (channelMsg == nullptr) {
+        SHARING_LOGE("unknow msg");
+        return SharingErrorCode::ERR_GENERAL_ERROR;
+    }
+    if (playController_ && playController_->SetAudioEnable(channelMsg->isAudioEnable)) {
+        return SharingErrorCode::ERR_OK;
+    }
+    SHARING_LOGE("set audio enable failed, mediaChannelId: %{public}u.", GetId());
+    return SharingErrorCode::ERR_GENERAL_ERROR;
+}
+
 void MediaChannel::SendAgentEvent(ProsumerStatusMsg::Ptr &msg, EventType eventType)
 {
     SHARING_LOGD("trace.");
@@ -947,6 +968,7 @@ void MediaChannel::SendAgentEvent(ProsumerStatusMsg::Ptr &msg, EventType eventTy
     agentMsg->prosumerId = msg->prosumerId;
     agentMsg->errorCode = msg->errorCode;
     agentMsg->surfaceId = msg->surfaceId;
+    agentMsg->audioInterruptEvent = msg->audioInterruptEvent;
 
     SharingEvent agentEvent;
     agentEvent.eventMsg = std::move(agentMsg);

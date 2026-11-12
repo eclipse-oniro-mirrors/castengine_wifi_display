@@ -17,6 +17,7 @@
 #define OHOS_SHARING_WFD_MSG_H
 
 #include "common/const_def.h"
+#include "common/event_comm.h"
 #include "interaction/ipc_codec/ipc_msg.h"
 #include "iremote_object.h"
 
@@ -49,37 +50,31 @@ enum WfdMsgId {
     WFD_SOURCE_DEVICE_FOUND_MSG,
     WFD_SOURCE_ADD_DEVICE_REQ,
     WFD_SOURCE_REMOVE_DEVICE_REQ,
+    WFD_SOURCE_SET_AUDIO_REQ,
     WFD_SOURCE_DESTROY_SCREEN_CAPTUREREQ_REQ,
+    WFD_SOURCE_SET_DISPLAY_REQ,
     WFD_GET_BOUND_DEVICES_REQ,
     WFD_GET_BOUND_DEVICES_RSP,
     WFD_DELETE_BOUND_DEVICE_REQ,
-    WFD_IS_PC_SOURCE_MSG
+    WFD_SOURCE_EVENT_REQ,
+    WFD_APP_CAST_SURFACE_REQ,
+    WFD_APP_CAST_SCREENID_MSG,
+    WFD_IS_PC_SOURCE_MSG,
+    WFD_BLACK_EDGE_ENABLE_REQ,
+    WFD_BLACK_EDGE_RECT_CHANGE_REQ,
+    WFD_BLACK_EDGE_CROP_INFO_REQ,
+    WFD_AUDIO_ENABLE_REQ,
+    WFD_AUDIO_ON_INTERRUPT_MSG,
     // domain msg
 };
 
 struct BoundDeviceInfo {
-    std::string deviceId = "";
-    std::string deviceName = "";
-    std::string deviceAddress = "";
-    std::string networkId = "";
+    IPC_BIND_ATTR(deviceId, deviceName, deviceAddress, networkId)
 
-    int32_t IpcSerialize(MessageParcel &data)
-    {
-        data.WriteString(this->deviceId);
-        data.WriteString(this->deviceName);
-        data.WriteString(this->deviceAddress);
-        data.WriteString(this->networkId);
-        return 0;
-    }
-
-    int32_t IpcDeserialize(MessageParcel &pIpcMsg)
-    {
-        this->deviceId = pIpcMsg.ReadString();
-        this->deviceName = pIpcMsg.ReadString();
-        this->deviceAddress = pIpcMsg.ReadString();
-        this->networkId = pIpcMsg.ReadString();
-        return 0;
-    }
+    std::string deviceId;
+    std::string deviceName;
+    std::string deviceAddress;
+    std::string networkId;
 };
 
 struct WfdCommonRsp : public BaseMsg {
@@ -368,13 +363,14 @@ struct WfdSourceStopDiscoveryReq : public BaseMsg {
 };
 
 struct WfdCastDeviceInfo {
-    IPC_BIND_ATTR(deviceId, ipAddr, deviceName, primaryDeviceType, secondaryDeviceType)
+    IPC_BIND_ATTR(deviceId, ipAddr, deviceName, primaryDeviceType, secondaryDeviceType, udidHash)
 
     std::string deviceId;
     std::string ipAddr;
     std::string deviceName;
     std::string primaryDeviceType;
     std::string secondaryDeviceType;
+    std::string udidHash;
 };
 
 struct WfdSourceDeviceFoundMsg : public BaseMsg {
@@ -406,6 +402,26 @@ struct WfdSourceRemoveDeviceReq : public BaseMsg {
     IPC_BIND_ATTR(deviceId)
 
     std::string deviceId;
+};
+
+struct WfdSourceSetAudioReq : public BaseMsg {
+    enum { MSG_ID = WfdMsgId::WFD_SOURCE_SET_AUDIO_REQ };
+
+    int32_t GetMsgId() final { return MSG_ID; }
+
+    IPC_BIND_ATTR(isAudioOn)
+
+    bool isAudioOn;
+};
+
+struct WfdSourceSetDisplayReq : public BaseMsg {
+    enum { MSG_ID = WfdMsgId::WFD_SOURCE_SET_DISPLAY_REQ };
+
+    int32_t GetMsgId() final { return MSG_ID; }
+
+    IPC_BIND_ATTR(displayParam)
+
+    std::string displayParam;
 };
 
 struct DestroyScreenCaptureReq : public BaseMsg {
@@ -481,6 +497,28 @@ struct WfdConnectionChangedMsg : public BaseMsg {
     std::string secondaryDeviceType;
 };
 
+struct WfdEventMsg : public BaseMsg {
+    enum { MSG_ID = WfdMsgId::WFD_APP_CAST_SCREENID_MSG };
+
+    int32_t GetMsgId() final { return MSG_ID; }
+    WfdEventMsg() = default;
+    explicit WfdEventMsg(const WfdEventMsg &rReq) {};
+    WfdEventMsg &operator=(const WfdEventMsg &rReq)
+    {
+        if (this != &rReq) {
+            this->eventId = rReq.eventId;
+            this->eventParam = rReq.eventParam;
+        }
+
+        return *this;
+    }
+
+    IPC_BIND_ATTR(eventId, eventParam)
+
+    int32_t eventId;
+    std::string eventParam;
+};
+
 struct WfdDecoderAccelerationDoneMsg : public BaseMsg {
     enum { MSG_ID = WfdMsgId::WFD_DECODER_ACCELERATION_DONE };
 
@@ -549,6 +587,17 @@ struct WfdGetBoundDevicesRsp : public BaseMsg {
     std::vector<BoundDeviceInfo> trustDevices;
 };
 
+struct WfdBlackEdgeRectChangeMsg : public BaseMsg {
+    enum { MSG_ID = WfdMsgId::WFD_BLACK_EDGE_RECT_CHANGE_REQ };
+
+    int32_t GetMsgId() final { return MSG_ID; }
+    WfdBlackEdgeRectChangeMsg() = default;
+
+    IPC_BIND_ATTR(blackEdgeRect)
+
+    BlackEdgeCropRect blackEdgeRect;
+};
+
 struct WfdDeleteBoundDeviceReq : public BaseMsg {
     enum { MSG_ID = WfdMsgId::WFD_DELETE_BOUND_DEVICE_REQ };
 
@@ -563,6 +612,27 @@ struct WfdDeleteBoundDeviceReq : public BaseMsg {
     std::string deviceAddress;
 };
 
+struct WfdSourceEventReq : public BaseMsg {
+    enum { MSG_ID = WfdMsgId::WFD_SOURCE_EVENT_REQ };
+
+    int32_t GetMsgId() final { return MSG_ID; }
+
+    IPC_BIND_ATTR(eventId, eventParam)
+
+    int32_t eventId;
+    std::string eventParam;
+};
+
+struct WfdAppCastSurfaceReq : public BaseMsg {
+    enum { MSG_ID = WfdMsgId::WFD_APP_CAST_SURFACE_REQ };
+
+    int32_t GetMsgId() final { return MSG_ID; }
+
+    IPC_BIND_ATTR(surface)
+
+    sptr<IRemoteObject> surface;
+};
+
 struct WfdIsPcSourceMsg : public BaseMsg {
     enum { MSG_ID = WfdMsgId::WFD_IS_PC_SOURCE_MSG };
 
@@ -572,6 +642,79 @@ struct WfdIsPcSourceMsg : public BaseMsg {
     }
 
     IPC_BIND_ATTR0
+};
+
+struct WfdBlackEdgeEnableReq : public BaseMsg {
+    enum { MSG_ID = WfdMsgId::WFD_BLACK_EDGE_ENABLE_REQ };
+
+    int32_t GetMsgId() final
+    {
+        return MSG_ID;
+    }
+    WfdBlackEdgeEnableReq() = default;
+    explicit WfdBlackEdgeEnableReq(const WfdBlackEdgeEnableReq &rReq){};
+    WfdBlackEdgeEnableReq &operator=(const WfdBlackEdgeEnableReq &rReq)
+    {
+        if (this != &rReq) {
+            this->isEnable = rReq.isEnable;
+            this->deviceId = rReq.deviceId;
+        }
+ 
+        return *this;
+    }
+ 
+    IPC_BIND_ATTR(isEnable, deviceId)
+ 
+    bool isEnable;
+    std::string deviceId;
+};
+
+struct WfdAudioEnableReq : public BaseMsg {
+    enum { MSG_ID = WfdMsgId::WFD_AUDIO_ENABLE_REQ };
+
+    int32_t GetMsgId() final { return MSG_ID; }
+    WfdAudioEnableReq() = default;
+    explicit WfdAudioEnableReq(const WfdAudioEnableReq &rReq){};
+    WfdAudioEnableReq &operator=(const WfdAudioEnableReq &rReq)
+    {
+        if (this != &rReq) {
+            this->isEnable = rReq.isEnable;
+            this->deviceId = rReq.deviceId;
+        }
+
+        return *this;
+    }
+
+    IPC_BIND_ATTR(isEnable, deviceId)
+
+    bool isEnable;
+    std::string deviceId;
+};
+
+struct WfdBlackEdgeCropInfoReq : public BaseMsg {
+    enum { MSG_ID = WfdMsgId::WFD_BLACK_EDGE_CROP_INFO_REQ };
+
+    int32_t GetMsgId() final
+    {
+        return MSG_ID;
+    }
+    WfdBlackEdgeCropInfoReq() = default;
+
+    IPC_BIND_ATTR(blackEdgeCropInfo, deviceId)
+
+    BlackEdgeCropInfo blackEdgeCropInfo;
+    std::string deviceId;
+};
+
+struct WfdAudioOnInterruptMsg : public BaseMsg {
+    enum { MSG_ID = WfdMsgId::WFD_AUDIO_ON_INTERRUPT_MSG };
+
+    int32_t GetMsgId() final { return MSG_ID; }
+    WfdAudioOnInterruptMsg() = default;
+
+    IPC_BIND_ATTR(audioInterruptEvent)
+
+    AudioInterruptEvent audioInterruptEvent;
 };
 
 } // namespace Sharing

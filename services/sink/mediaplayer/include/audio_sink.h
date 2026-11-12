@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <thread>
 #include "audio_renderer.h"
+#include "common/event_comm.h"
 
 namespace OHOS {
 namespace Sharing {
@@ -60,7 +61,6 @@ public:
     AudioSink(uint32_t playerId);
     virtual ~AudioSink();
 
-    int32_t Prepare();
     int32_t Prepare(int32_t channels, int32_t sampleRate);
     int32_t Stop();
     int32_t Start();
@@ -82,7 +82,7 @@ public:
                        const AudioStandard::StateChangeCmdType cmdType) override;
     void OnInterrupt(const AudioStandard::InterruptEvent &interruptEvent) override;
     void SetIsPcSource(bool isPcSource);
-    void SetAudioFocusChangeCallback(std::function<void(bool hasFocus)> callback);
+    void SetAudioOnInterruptCallback(std::function<void(AudioInterruptEvent &)> callback);
 
 private:
     bool running_ = false;
@@ -92,7 +92,7 @@ private:
 
     std::mutex mutex_;
     std::unique_ptr<OHOS::AudioStandard::AudioRenderer> audioRenderer_ = nullptr;
-    std::function<void(bool hasFocus)> onAudioFocusChange_ = nullptr;
+    std::function<void(AudioInterruptEvent &)> onAudioInterrupt_ = nullptr;
     std::mutex audioRenderMutex_;
     std::mutex stateMutex_;
 };

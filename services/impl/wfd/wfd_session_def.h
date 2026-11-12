@@ -177,6 +177,14 @@ struct WfdSceneEventMsg : public InteractionEventMsg {
     using Ptr = std::shared_ptr<WfdSceneEventMsg>;
 
     std::string mac;
+    int32_t interval = 0;
+};
+
+struct WfdSceneCommonEventMsg : public WfdSceneEventMsg {
+    using Ptr = std::shared_ptr<WfdSceneCommonEventMsg>;
+
+    int32_t eventId = 0;
+    std::string eventParam;
 };
 
 // Table 34. Supported CEA Resolution/Refresh Rates

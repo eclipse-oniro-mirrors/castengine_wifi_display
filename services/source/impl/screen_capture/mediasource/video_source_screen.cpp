@@ -54,16 +54,8 @@ int32_t VideoSourceScreen::InitScreenSource(const VideoSourceConfigure &configur
         return ERR_GENERAL_ERROR;
     }
 
-    int32_t ret = RegisterScreenGroupListener();
-    if (ret != ERR_OK) {
-        SHARING_LOGE("RegisterScreenGroupListener failed, ret: %{public}d.", ret);
-        return ret;
-    }
-    uint64_t screenId = CreateVirtualScreen(configure);
-    if (screenId == SCREEN_ID_INVALID) {
-        SHARING_LOGE("CreateVirtualScreen failed.");
-        return ERR_GENERAL_ERROR;
-    }
+    RegisterScreenGroupListener();
+    CreateVirtualScreen(configure);
     srcScreenId_ = configure.srcScreenId_;
     return ERR_OK;
 }
@@ -83,7 +75,6 @@ int32_t VideoSourceScreen::RegisterScreenGroupListener()
     auto ret = Rosen::ScreenManager::GetInstance().RegisterScreenGroupListener(screenGroupListener_);
     if (ret != OHOS::Rosen::DMError::DM_OK) {
         SHARING_LOGE("RegisterScreenGroupListener Failed!");
-        screenGroupListener_ = nullptr;
         return ERR_GENERAL_ERROR;
     }
     SHARING_LOGI("Register successed!");
@@ -171,7 +162,6 @@ int32_t VideoSourceScreen::SetEncoderSurface(sptr<OHOS::Surface> surface)
     SHARING_LOGI("%{public}s.", __FUNCTION__);
     if (screenId_ == SCREEN_ID_INVALID) {
         SHARING_LOGE("Failed, invalid screenId!");
-        return ERR_GENERAL_ERROR;
     }
     if (surface == nullptr) {
         SHARING_LOGE("Surface is nullptr!");
@@ -189,9 +179,8 @@ int32_t VideoSourceScreen::SetEncoderSurface(sptr<OHOS::Surface> surface)
 void VideoSourceScreen::RemoveScreenFromGroup() const
 {
     SHARING_LOGI("%{public}s.", __FUNCTION__);
-    if (screenId_ == SCREEN_ID_INVALID) {
+    if (screenId_ != SCREEN_ID_INVALID) {
         SHARING_LOGE("Failed, invalid screenId!");
-        return;
     }
     SHARING_LOGI("Remove screen from group, screenId: %{publid}" PRIu64 ".", screenId_);
     std::vector<uint64_t> screenIds;

@@ -360,6 +360,12 @@ void WfdSinkScene::WfdP2pCallback::OnP2pChrErrCodeReport(const int errCode)
     SHARING_LOGD("trace.");
 }
 
+void WfdSinkScene::WfdP2pCallback::OnP2pServiceDiscoveryResult(const Wifi::P2pServiceDiscoveryInfo &info,
+    const Wifi::WifiP2pDevice &device)
+{
+    SHARING_LOGD("%{public}s.", __FUNCTION__);
+}
+
 void WfdSinkScene::WifiCallback::OnWifiStateChanged(int state)
 {
     SHARING_LOGI("OnWifiStateChanged state %{public}d", state);

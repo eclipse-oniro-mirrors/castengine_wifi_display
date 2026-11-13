@@ -63,6 +63,8 @@ public:
         std::string GetUdidHash(std::string deviceId);
         static bool GetErrorCode(Wifi::ErrCode errorCode, std::pair<SharingErrorCode, std::string>& sharingError);
         void OnP2pChrErrCodeReport(const int errCode) override;
+        void OnP2pServiceDiscoveryResult(const Wifi::P2pServiceDiscoveryInfo &info,
+            const Wifi::WifiP2pDevice &device) override;
         Wifi::WifiP2pDevice GetGoDevice(const Wifi::WifiP2pGroupInfo &group,
                                          const std::shared_ptr<WfdSourceScene> &scene);
         void NotifyPeerConnected(const Wifi::WifiP2pLinkedInfo &info,

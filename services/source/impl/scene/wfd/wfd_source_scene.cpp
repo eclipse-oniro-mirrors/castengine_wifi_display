@@ -534,6 +534,12 @@ void WfdSourceScene::WfdSystemAbilityListener::OnRemoveSystemAbility(int32_t sys
     scene->OnWfdServiceAbilityDied();
 }
 
+void WfdSourceScene::WfdP2pCallback::OnP2pServiceDiscoveryResult(const Wifi::P2pServiceDiscoveryInfo &info,
+    const Wifi::WifiP2pDevice &device)
+{
+    SHARING_LOGD("%{public}s.", __FUNCTION__);
+}
+
 WfdSourceScene::WfdSourceScene()
 {
     HILOG_COMM_INFO("id: %{public}u.", GetId());

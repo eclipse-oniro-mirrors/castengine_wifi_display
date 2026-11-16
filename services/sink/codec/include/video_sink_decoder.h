@@ -59,6 +59,9 @@ public:
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<MediaAVCodec::AVSharedMemory> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, MediaAVCodec::AVCodecBufferInfo info,
         MediaAVCodec::AVCodecBufferFlag flag, std::shared_ptr<MediaAVCodec::AVSharedMemory> buffer) override;
+#ifdef WFD_CAR_SCENE
+    bool IsVideoTooLate(int64_t pts);
+#endif
 
 private:
     bool InitDecoder();

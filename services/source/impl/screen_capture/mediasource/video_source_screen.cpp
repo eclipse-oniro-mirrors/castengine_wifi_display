@@ -205,14 +205,13 @@ void VideoSourceScreen::SetMultiScreenMode(Rosen::MultiScreenMode mode)
 
 void VideoSourceScreen::SetProjectionDisplay(uint32_t mode, uint32_t rotation, Rect mainScreenRegion)
 {
-
     SHARING_LOGI("%{public}s.", __FUNCTION__);
-    if(mode == 5){
+    if (mode == 5) { // 5:SCREEN_MIRROR
         SetMultiScreenMode(Rosen::MultiScreenMode::SCREEN_MIRROR);
         return;
     }
 
-    if(mode == 4){
+    if (mode == 4) { // 4:SCREEN_EXTEND
         SetMultiScreenMode(Rosen::MultiScreenMode::SCREEN_EXTEND);
         return;
     }
@@ -231,10 +230,10 @@ void VideoSourceScreen::SetProjectionDisplay(uint32_t mode, uint32_t rotation, R
     Rosen::DMRect mainScreenDMRegion;
     mainScreenDMRegion.posX_ = mainScreenRegion.x;
     mainScreenDMRegion.posY_ = mainScreenRegion.y;
-	uint32_t width_uint = (uint32_t)mainScreenRegion.w;
-	uint32_t height_uint = (uint32_t)mainScreenRegion.h;
-    mainScreenDMRegion.width_ = width_uint;
-    mainScreenDMRegion.height_ = height_uint;
+    uint32_t widthUint = (uint32_t)mainScreenRegion.w;
+    uint32_t heightUint = (uint32_t)mainScreenRegion.h;
+    mainScreenDMRegion.width_ = widthUint;
+    mainScreenDMRegion.height_ = heightUint;
     MakeMirrorByRect(mainScreenDMRegion);
 }
 
@@ -340,7 +339,7 @@ Rosen::VirtualScreenOption VideoSourceScreen::CreateVirtualScreenOption(const Vi
                                          true,
                                          true,
                                          configure.serialNumber_};
-    option.bundleName_ = HUAWEI_CAST_BUNDLE_NAME;
+    option.bundleName_ = "cast";
     if (configure.isPc_) {
         SHARING_LOGI("set pc mode flag");
         option.virtualScreenFlag_ = Rosen::VirtualScreenFlag::DEFAULT;

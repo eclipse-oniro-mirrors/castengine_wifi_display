@@ -20,6 +20,7 @@
 #include "common/sharing_log.h"
 #include "extend/magic_enum/magic_enum.hpp"
 #include "screen_capture_def.h"
+#include "wfd_session_def.h"
 
 namespace OHOS {
 namespace Sharing {
@@ -35,7 +36,7 @@ ScreenCaptureSession::~ScreenCaptureSession()
 
 int32_t ScreenCaptureSession::HandleEvent(SharingEvent &event)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     RETURN_INVALID_IF_NULL(event.eventMsg);
 
     SHARING_LOGI("eventType: %{public}s, capture sessionId: %{public}u.",
@@ -51,6 +52,30 @@ int32_t ScreenCaptureSession::HandleEvent(SharingEvent &event)
         case EventType::EVENT_AGENT_STATE_PROSUMER_INIT:
             HandleProsumerInitState(event);
             break;
+        case EventType::EVENT_SCREEN_CAPTURE_SET_AUDIO:
+            SHARING_LOGI("EVENT_SCREEN_CAPTURE_SET_AUDIO");
+            HandleSessionSetAudio(event);
+            break;
+        case EventType::EVENT_SCREEN_REQUEST_IDR:
+            SHARING_LOGI("EVENT_SCREEN_REQUEST_IDR");
+            HandleSessionRequestIdr(event);
+            break;
+        case EventType::EVENT_SCREEN_CAPTURE_SET_DISPLAY:
+            SHARING_LOGI("EVENT_SCREEN_CAPTURE_SET_DISPLAY");
+            HandleSessionSetDisplay(event);
+            break;
+        case EventType::EVENT_SCREEN_CAPTURE_COMMON:
+            SHARING_LOGI("EVENT_SCREEN_CAPTURE_COMMON");
+            HandleSessionCommon(event);
+            break;
+        case EventType::EVENT_SCREEN_CAPTURE_APPEND_SURFACE:
+            SHARING_LOGI("EVENT_SCREEN_CAPTURE_APPEND_SURFACE");
+            HandleSessionAppendSurface(event);
+            break;
+        case EventType::EVENT_AGENT_PROSUMER_COMMON:
+            SHARING_LOGI("EVENT_AGENT_PROSUMER_COMMON");
+            NotifyEvent(event);
+            break;
         default:
             SHARING_LOGI("none process case.");
             break;
@@ -59,15 +84,129 @@ int32_t ScreenCaptureSession::HandleEvent(SharingEvent &event)
     return 0;
 }
 
+void ScreenCaptureSession::HandleSessionSetDisplay(SharingEvent &event)
+{
+    SHARING_LOGI("HandleSessionSetDisplay.");
+    auto inputMsg = ConvertEventMsg<SetDisplaySessionEventMsg>(event);
+    auto statusMsg = std::make_shared<SessionStatusMsg>();
+
+    auto setDisplayMsg = std::make_shared<ScreenCaptureConsumerDisplayEventMsg>();
+    setDisplayMsg->type = EVENT_SCREEN_CAPTURE_SET_DISPLAY;
+    setDisplayMsg->toMgr = ModuleType::MODULE_MEDIACHANNEL;
+    setDisplayMsg->projectMode = inputMsg->projectMode;
+    setDisplayMsg->projectRotation = inputMsg->projectRotation;
+    setDisplayMsg->mainScreenRegion = inputMsg->mainScreenRegion;
+    statusMsg->msg = std::move(setDisplayMsg);
+    statusMsg->status = NOTIFY_SESSION_PRIVATE_EVENT;
+    NotifyAgentSessionStatus(statusMsg);
+}
+
+void ScreenCaptureSession::HandleSessionCommon(SharingEvent &event)
+{
+    SHARING_LOGI("HandleSessionCommon.");
+    auto inputMsg = ConvertEventMsg<CommonSessionEventMsg>(event);
+    auto statusMsg = std::make_shared<SessionStatusMsg>();
+
+    auto commonMsg = std::make_shared<ScreenCaptureConsumerCommonEventMsg>();
+    commonMsg->type = EVENT_SCREEN_CAPTURE_COMMON;
+    commonMsg->toMgr = ModuleType::MODULE_MEDIACHANNEL;
+    commonMsg->eventId = inputMsg->eventId;
+    commonMsg->eventParam = inputMsg->eventParam;
+    statusMsg->msg = std::move(commonMsg);
+    statusMsg->status = NOTIFY_SESSION_PRIVATE_EVENT;
+    NotifyAgentSessionStatus(statusMsg);
+}
+
+void ScreenCaptureSession::HandleSessionAppendSurface(SharingEvent &event)
+{
+    SHARING_LOGI("HandleSessionAppendSurface.");
+    auto inputMsg = ConvertEventMsg<AppendSurfaceSessionEventMsg>(event);
+    auto statusMsg = std::make_shared<SessionStatusMsg>();
+
+    auto sufaceMsg = std::make_shared<ScreenCaptureConsumerSurfaceEventMsg>();
+    sufaceMsg->type = EVENT_SCREEN_CAPTURE_APPEND_SURFACE;
+    sufaceMsg->toMgr = ModuleType::MODULE_MEDIACHANNEL;
+    sufaceMsg->surface = inputMsg->surface;
+    statusMsg->msg = std::move(sufaceMsg);
+    statusMsg->status = NOTIFY_SESSION_PRIVATE_EVENT;
+    NotifyAgentSessionStatus(statusMsg);
+}
+
+void ScreenCaptureSession::HandleSessionSetAudio(SharingEvent &event)
+{
+    SHARING_LOGI("HandleSessionSetAudio.");
+    auto inputMsg = ConvertEventMsg<SetAudioSessionEventMsg>(event);
+    auto statusMsg = std::make_shared<SessionStatusMsg>();
+
+    auto setAudioSessionMsg = std::make_shared<ScreenCaptureConsumerAudioEventMsg>();
+    setAudioSessionMsg->type = EVENT_SCREEN_CAPTURE_SET_AUDIO;
+    setAudioSessionMsg->toMgr = ModuleType::MODULE_MEDIACHANNEL;
+    setAudioSessionMsg->isAudioOn = inputMsg->isAudioOn;
+
+    statusMsg->msg =   std::move(setAudioSessionMsg);
+    statusMsg->status = NOTIFY_SESSION_PRIVATE_EVENT;
+
+    NotifyAgentSessionStatus(statusMsg);
+}
+
+void ScreenCaptureSession::HandleSessionRequestIdr(SharingEvent &event)
+{
+    SHARING_LOGI("HandleSessionRequestIdr.");
+    auto inputMsg = ConvertEventMsg<SessionEventMsg>(event);
+    auto statusMsg = std::make_shared<SessionStatusMsg>();
+
+    auto setRefreshSessionMsg = std::make_shared<ChannelEventMsg>();
+    setRefreshSessionMsg->type = EVENT_SCREEN_REQUEST_IDR;
+    setRefreshSessionMsg->toMgr = ModuleType::MODULE_MEDIACHANNEL;
+
+    statusMsg->msg =   std::move(setRefreshSessionMsg);
+    statusMsg->status = NOTIFY_SESSION_PRIVATE_EVENT;
+    SHARING_LOGI("HandleSessionRequestIdr2.");
+    NotifyAgentSessionStatus(statusMsg);
+}
+
+void ScreenCaptureSession::NotifyRtspPlay()
+{
+    SHARING_LOGI("NotifyRtspPlay.");
+    auto statusPlayedMsg = std::make_shared<SessionStatusMsg>();
+    auto WfdSceneeventMsg = std::make_shared<WfdSceneEventMsg>();
+    WfdSceneeventMsg->type = EventType::EVENT_WFD_NOTIFY_RTSP_PLAYED;
+    WfdSceneeventMsg->toMgr = ModuleType::MODULE_INTERACTION;
+    statusPlayedMsg->msg = std::move(WfdSceneeventMsg);
+    statusPlayedMsg->status = NOTIFY_SESSION_PRIVATE_EVENT;
+    NotifyAgentSessionStatus(statusPlayedMsg);
+}
+
+void ScreenCaptureSession::NotifyEvent(SharingEvent &event)
+{
+    SHARING_LOGI("NotifyEvent.");
+    auto inputMsg = ConvertEventMsg<CommonSessionEventMsg>(event);
+    auto statusMsg = std::make_shared<SessionStatusMsg>();
+    auto WfdSceneeventMsg = std::make_shared<WfdSceneCommonEventMsg>();
+    WfdSceneeventMsg->eventId = inputMsg->eventId;
+    WfdSceneeventMsg->eventParam = inputMsg->eventParam;
+    WfdSceneeventMsg->type = EventType::EVENT_WFD_NOTIFY_EVENT;
+    WfdSceneeventMsg->toMgr = ModuleType::MODULE_INTERACTION;
+    statusMsg->msg = std::move(WfdSceneeventMsg);
+    statusMsg->status = NOTIFY_SESSION_PRIVATE_EVENT;
+    NotifyAgentSessionStatus(statusMsg);
+}
+
 void ScreenCaptureSession::HandleRtspPlay(SharingEvent &event)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("HandleRtspPlay.");
     auto inputMsg = ConvertEventMsg<ScreenCaptureSessionEventMsg>(event);
+    if (inputMsg == nullptr) {
+        SHARING_LOGE("inputMsg is null.");
+        return;
+    }
     auto statusMsg = std::make_shared<SessionStatusMsg>();
     auto eventMsg = std::make_shared<ScreenCaptureConsumerEventMsg>();
     eventMsg->type = EventType::EVENT_WFD_NOTIFY_RTSP_PLAYED;
     eventMsg->toMgr = ModuleType::MODULE_MEDIACHANNEL;
     eventMsg->screenId = screenId_;
+    videoFormat_ = inputMsg->videoFormat;
+
     switch (captureType_) {
         case MEDIA_TYPE_AV:
             Common::SetVideoTrack(eventMsg->videoTrack, videoFormat_);
@@ -83,17 +222,17 @@ void ScreenCaptureSession::HandleRtspPlay(SharingEvent &event)
             SHARING_LOGI("none process case.");
             break;
     }
+    eventMsg->videoCodecId = inputMsg->videoCodecId;
     SHARING_LOGI("after SetVideoTrack, vtype:%{public}d, vFormat:%{public}d, vcodecId:%{public}d.", captureType_,
                  videoFormat_, eventMsg->videoTrack.codecId);
     statusMsg->msg = std::move(eventMsg);
     statusMsg->status = NOTIFY_SESSION_PRIVATE_EVENT;
-
     NotifyAgentSessionStatus(statusMsg);
 }
 
 void ScreenCaptureSession::HandleSessionInit(SharingEvent &event)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     RETURN_IF_NULL(event.eventMsg);
 
     auto inputMsg = ConvertEventMsg<ScreenCaptureSessionEventMsg>(event);
@@ -112,7 +251,7 @@ void ScreenCaptureSession::HandleSessionInit(SharingEvent &event)
 
 void ScreenCaptureSession::HandleProsumerInitState(SharingEvent &event)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     RETURN_IF_NULL(event.eventMsg);
 
     auto inputMsg = ConvertEventMsg<ScreenCaptureSessionEventMsg>(event);
@@ -140,7 +279,7 @@ void ScreenCaptureSession::HandleProsumerInitState(SharingEvent &event)
 
 void ScreenCaptureSession::UpdateOperation(SessionStatusMsg::Ptr &statusMsg)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     RETURN_IF_NULL(statusMsg);
     RETURN_IF_NULL(statusMsg->msg);
 
@@ -172,7 +311,9 @@ void ScreenCaptureSession::UpdateOperation(SessionStatusMsg::Ptr &statusMsg)
 
 void ScreenCaptureSession::NotifyProsumerInit(SessionStatusMsg::Ptr &statusMsg)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
+    RETURN_IF_NULL(statusMsg);
+    RETURN_IF_NULL(statusMsg->msg);
     auto eventMsg = std::make_shared<ScreenCaptureConsumerEventMsg>();
     eventMsg->type = EventType::EVENT_SCREEN_CAPTURE_INIT;
     eventMsg->toMgr = ModuleType::MODULE_MEDIACHANNEL;
@@ -202,7 +343,7 @@ void ScreenCaptureSession::NotifyProsumerInit(SessionStatusMsg::Ptr &statusMsg)
 
 void ScreenCaptureSession::UpdateMediaStatus(SessionStatusMsg::Ptr &statusMsg)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     RETURN_IF_NULL(statusMsg);
     RETURN_IF_NULL(statusMsg->msg);
 
@@ -218,6 +359,9 @@ void ScreenCaptureSession::UpdateMediaStatus(SessionStatusMsg::Ptr &statusMsg)
             break;
         case STATE_PROSUMER_DESTROY_SUCCESS:
             break;
+        case STATE_PROSUMER_STARTED_SUCCESS:
+            NotifyRtspPlay();
+            break;
         default:
             SHARING_LOGI("none process case.");
             break;
@@ -226,7 +370,7 @@ void ScreenCaptureSession::UpdateMediaStatus(SessionStatusMsg::Ptr &statusMsg)
 
 void ScreenCaptureSession::NotifyAgentSessionStatus(SessionStatusMsg::Ptr &statusMsg)
 {
-    SHARING_LOGD("trace.");
+    SHARING_LOGI("%{public}s.", __FUNCTION__);
     RETURN_IF_NULL(statusMsg);
 
     if (statusMsg->status == NOTIFY_PROSUMER_CREATE) {

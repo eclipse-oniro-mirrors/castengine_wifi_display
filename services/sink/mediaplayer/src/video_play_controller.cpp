@@ -224,7 +224,7 @@ void VideoPlayController::VideoPlayThread()
         if (ret != 0) {
             continue;
         }
-#ifdef WFD_CAR_SCENE
+#ifdef WFD_TRAVEL_SCENE
         if (videoSinkDecoder_ != nullptr && !outData->keyFrame &&
             videoSinkDecoder_->IsVideoTooLate(static_cast<int64_t>(outData->pts))) {
             MEDIA_LOGD("car scene: skip late video frame before decode.");

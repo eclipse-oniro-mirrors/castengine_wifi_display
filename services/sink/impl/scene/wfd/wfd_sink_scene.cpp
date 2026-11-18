@@ -182,15 +182,22 @@ void WfdSinkScene::WfdP2pCallback::OnP2pConnectionChanged(const Wifi::WifiP2pLin
             std::unique_lock<std::mutex> lock(parent->localIpMutex_);
             parent->localIp_ = "";
         }
+#ifdef WFD_TRAVEL_SCENE
+        SHARING_LOGI("car scene keep existing GO after disconnect");
+        return;
+#else
         parent->WfdP2pStart();
         return;
+#endif
     }
 
     if (parent->p2pInstance_ == nullptr) {
         SHARING_LOGE("p2pInstance_ is null");
         return;
     }
+#ifndef WFD_TRAVEL_SCENE
     parent->p2pInstance_->StopP2pListen();
+#endif
     Wifi::WifiP2pGroupInfo group;
     if (Wifi::ErrCode::WIFI_OPT_SUCCESS != parent->p2pInstance_->GetCurrentGroup(group)) {
         SHARING_LOGE("GetCurrentGroup failed");
@@ -239,22 +246,33 @@ void WfdSinkScene::WfdP2pCallback::OnP2pGcJoinGroup(const OHOS::Wifi::GcInfo &in
 {
     SHARING_LOGI("trace.");
     auto parent = parent_.lock();
-    if (!parent || !parent->p2pInstance_) {
+    if (!parent) {
         return;
     }
-    std::vector<Wifi::WifiP2pDevice> devices;
-    if (Wifi::ErrCode::WIFI_OPT_SUCCESS != parent->p2pInstance_->QueryP2pDevices(devices)) {
-        SHARING_LOGE("QueryP2pDevices failed");
-        return;
-    }
-    SHARING_LOGI("QueryP2pDevices ip:%{private}s addr: %{private}s host: %{private}s.", GetAnonymousIp(info.ip).c_str(),
-                 GetAnonymousMAC(info.mac).c_str(), GetAnonyString(info.host).c_str());
+    SHARING_LOGI("QueryP2pDevices ip:%{private}s addr: %{private}s host: %{private}s.",
+                 GetAnonymousIp(info.ip).c_str(), GetAnonymousMAC(info.mac).c_str(),
+                 GetAnonyString(info.host).c_str());
     if (info.ip == "0.0.0.0" || info.ip == "") {
         SHARING_LOGE("device: %{private}s leased ip is: 0.0.0.0.", GetAnonymousMAC(info.mac).c_str());
         parent->OnInnerError(info.mac.c_str(), ERR_P2P_DHCP_INVALID_IP, "ip is: 0.0.0.0.");
         return;
     }
+#ifdef WFD_TRAVEL_SCENE
+    HandleGcJoinGroupCar(parent, info);
+#else
+    HandleGcJoinGroupDefault(parent, info);
+#endif
+}
 
+#ifndef WFD_TRAVEL_SCENE
+void WfdSinkScene::WfdP2pCallback::HandleGcJoinGroupDefault(
+    const std::shared_ptr<WfdSinkScene> &parent, const OHOS::Wifi::GcInfo &info)
+{
+    std::vector<Wifi::WifiP2pDevice> devices;
+    if (Wifi::ErrCode::WIFI_OPT_SUCCESS != parent->p2pInstance_->QueryP2pDevices(devices)) {
+        SHARING_LOGE("QueryP2pDevices failed");
+        return;
+    }
     for (auto itDev : devices) {
         if (itDev.GetDeviceAddress() != info.mac) {
             continue;
@@ -267,10 +285,107 @@ void WfdSinkScene::WfdP2pCallback::OnP2pGcJoinGroup(const OHOS::Wifi::GcInfo &in
         connectionInfo.ctrlPort = itDev.GetWfdInfo().GetCtrlPort();
         connectionInfo.deviceName = itDev.GetDeviceName();
         connectionInfo.state = ConnectionState::CONNECTED;
-        parent->HandleGcJoinGroup(connectionInfo, wfdTrustListManager_);
+        {
+            std::unique_lock<std::mutex> lock(parent->currentConnectDevMutex_);
+            parent->currentConnectDev_ = connectionInfo;
+        }
+        SHARING_LOGI(
+            "device connected, deviceName: %{public}s, mac: %{private}s, ip: %{private}s, port: %{private}d",
+            GetAnonyDevName(connectionInfo.deviceName).c_str(), GetAnonymousMAC(connectionInfo.mac).c_str(),
+            GetAnonymousIp(connectionInfo.ip).c_str(), connectionInfo.ctrlPort);
+        if (!parent->OnP2pPeerConnected(connectionInfo)) {
+            SHARING_LOGE("OnP2pPeerConnected failed, no need to AddBoundDevice");
+            return;
+        }
+        if (!parent->isSinkRunning_.load()) {
+            SHARING_LOGE("sink is not running, no need to AddBoundDevice");
+            return;
+        }
+        Wifi::WifiP2pGroupInfo group;
+        if (Wifi::ErrCode::WIFI_OPT_SUCCESS != parent->p2pInstance_->GetCurrentGroup(group)) {
+            SHARING_LOGE("GetCurrentGroup failed");
+            return;
+        }
+        wfdTrustListManager_.AddBoundDevice(group);
         return;
     }
 }
+#else
+bool WfdSinkScene::WfdP2pCallback::FindGcDevice(const std::vector<Wifi::WifiP2pDevice> &devices,
+    const OHOS::Wifi::GcInfo &info, ConnectionInfo &connectionInfo)
+{
+    for (const auto &itDev : devices) {
+        if (itDev.GetDeviceAddress() != info.mac) {
+            continue;
+        }
+        connectionInfo.ip = info.ip;
+        connectionInfo.mac = itDev.GetDeviceAddress();
+        connectionInfo.primaryDeviceType = itDev.GetPrimaryDeviceType();
+        connectionInfo.secondaryDeviceType = itDev.GetSecondaryDeviceType();
+        connectionInfo.ctrlPort = itDev.GetWfdInfo().GetCtrlPort();
+        connectionInfo.deviceName = itDev.GetDeviceName();
+        connectionInfo.state = ConnectionState::CONNECTED;
+        return true;
+    }
+    return false;
+}
+
+void WfdSinkScene::WfdP2pCallback::HandleGcJoinGroupCar(
+    const std::shared_ptr<WfdSinkScene> &parent, const OHOS::Wifi::GcInfo &info)
+{
+    /*
+     * The device may have been removed from the device manager on the previous
+     * disconnect, so QueryP2pDevices can be empty on reconnect. Prefer the
+     * current group's client list, then fall back to GcInfo.
+     */
+    Wifi::WifiP2pGroupInfo group;
+    std::vector<Wifi::WifiP2pDevice> devices;
+    if (Wifi::ErrCode::WIFI_OPT_SUCCESS == parent->p2pInstance_->GetCurrentGroup(group)) {
+        devices = group.GetClientDevices();
+    }
+    if (devices.empty() &&
+        Wifi::ErrCode::WIFI_OPT_SUCCESS != parent->p2pInstance_->QueryP2pDevices(devices)) {
+        SHARING_LOGE("QueryP2pDevices failed");
+    }
+
+    ConnectionInfo connectionInfo;
+    if (!FindGcDevice(devices, info, connectionInfo)) {
+        SHARING_LOGW("device not found in p2p list, fallback to GcInfo, mac: %{private}s.",
+                     GetAnonymousMAC(info.mac).c_str());
+        connectionInfo.ip = info.ip;
+        connectionInfo.mac = info.mac;
+        connectionInfo.deviceName = info.host;
+        connectionInfo.state = ConnectionState::CONNECTED;
+    }
+    if (connectionInfo.ctrlPort == 0) {
+        connectionInfo.ctrlPort = DEFAULT_WFD_CTRLPORT;
+    }
+    if (connectionInfo.deviceName.empty()) {
+        connectionInfo.deviceName = info.host;
+    }
+    {
+        std::unique_lock<std::mutex> lock(parent->currentConnectDevMutex_);
+        parent->currentConnectDev_ = connectionInfo;
+    }
+    SHARING_LOGI(
+        "device connected, deviceName: %{public}s, mac: %{private}s, ip: %{private}s, port: %{private}d",
+        GetAnonyDevName(connectionInfo.deviceName).c_str(), GetAnonymousMAC(connectionInfo.mac).c_str(),
+        GetAnonymousIp(connectionInfo.ip).c_str(), connectionInfo.ctrlPort);
+    if (!parent->OnP2pPeerConnected(connectionInfo)) {
+        SHARING_LOGE("OnP2pPeerConnected failed, no need to AddBoundDevice");
+        return;
+    }
+    if (!parent->isSinkRunning_.load()) {
+        SHARING_LOGE("sink is not running, no need to AddBoundDevice");
+        return;
+    }
+    if (Wifi::ErrCode::WIFI_OPT_SUCCESS != parent->p2pInstance_->GetCurrentGroup(group)) {
+        SHARING_LOGE("GetCurrentGroup failed");
+        return;
+    }
+    wfdTrustListManager_.AddBoundDevice(group);
+}
+#endif
 
 void WfdSinkScene::HandleGcJoinGroup(ConnectionInfo &connectionInfo, WfdTrustListManager &trustListManager)
 {
@@ -1435,6 +1550,14 @@ void WfdSinkScene::WfdP2pStart()
         wfdInfo.SetMaxThroughput(0x00c8);
 
         p2pInstance_->SetP2pWfdInfo(wfdInfo);
+#ifdef WFD_TRAVEL_SCENE
+        Wifi::WifiP2pGroupInfo group;
+        if (p2pInstance_->GetCurrentGroup(group) == Wifi::ErrCode::WIFI_OPT_SUCCESS &&
+            !group.GetInterface().empty() &&
+            group.GetP2pGroupStatus() == Wifi::P2pGroupStatus::GS_STARTED) {
+            SHARING_LOGI("reuse existing car GO, keep listen for discovery");
+        }
+#endif
         p2pInstance_->StartP2pListen(P2P_LISTEN_PERIOD, P2P_LISTEN_INTERVAL);
     }
 }

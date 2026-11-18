@@ -42,7 +42,7 @@ bool VideoAudioSync::IsNeedDrop(int64_t videoTimestamp)
     return ProcessAVSyncStrategy(videoTimestamp);
 }
 
-#ifdef WFD_CAR_SCENE
+#ifdef WFD_TRAVEL_SCENE
 bool VideoAudioSync::IsVideoTooLate(int64_t videoTimestamp)
 {
     if (audioPlayController_ == nullptr) {

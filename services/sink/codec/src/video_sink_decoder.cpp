@@ -120,7 +120,7 @@ void VideoSinkDecoder::SetVideoAudioSync(std::shared_ptr<VideoAudioSync> videoAu
     videoAudioSync_ = videoAudioSync;
 }
 
-#ifdef WFD_CAR_SCENE
+#ifdef WFD_TRAVEL_SCENE
 bool VideoSinkDecoder::IsVideoTooLate(int64_t pts)
 {
     if (videoAudioSync_ == nullptr) {

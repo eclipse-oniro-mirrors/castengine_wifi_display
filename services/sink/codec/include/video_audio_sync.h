@@ -34,6 +34,7 @@ public:
     void ResetAVSyncExceptionCount();
 #ifdef WFD_TRAVEL_SCENE
     bool IsVideoTooLate(int64_t videoTimestamp);
+    void ResetSyncBaseline();
 #endif
 
 private:

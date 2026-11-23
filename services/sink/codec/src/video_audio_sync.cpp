@@ -54,6 +54,15 @@ bool VideoAudioSync::IsVideoTooLate(int64_t videoTimestamp)
     }
     return (videoTimestamp - audioPts) < VIDEO_TOO_LATE_US;
 }
+
+void VideoAudioSync::ResetSyncBaseline()
+{
+    SHARING_LOGI("car scene: reset av sync baseline.");
+    isFirstFrame_ = true;
+    continueDropCount_ = 0;
+    videoTooLateConsecutiveCount_ = 0;
+    audioTooLateConsecutiveCount_ = 0;
+}
 #endif
 
 bool VideoAudioSync::ProcessAVSyncStrategy(int64_t videoTimestamp)
@@ -80,6 +89,10 @@ bool VideoAudioSync::ProcessAVSyncStrategy(int64_t videoTimestamp)
             videoTooLateConsecutiveCount_ = 0;
             SHARING_LOGE("Video is too late consecutive %{public}d times", videoTooLateCount_);
         }
+#ifdef WFD_TRAVEL_SCENE
+        continueDropCount_ = 0;
+        return true;
+#endif
     } else if (earlyUs < VIDEO_LATE_US && continueDropCount_ <= 0) {
         ++continueDropCount_;
         ++videoDropFrameCount_;

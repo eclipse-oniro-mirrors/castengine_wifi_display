@@ -87,6 +87,9 @@ public:
     CodecId videoCodecId_ = CODEC_NONE;
     sptr<OHOS::Surface> surface_ = nullptr;
     std::shared_ptr<VideoAudioSync> videoAudioSync_ = nullptr;
+#ifdef WFD_TRAVEL_SCENE
+    bool isCatchingUp_ = false;
+#endif
 };
 } // namespace Sharing
 } // namespace OHOS

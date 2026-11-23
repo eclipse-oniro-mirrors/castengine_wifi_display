@@ -225,16 +225,7 @@ void VideoPlayController::VideoPlayThread()
             continue;
         }
 #ifdef WFD_TRAVEL_SCENE
-        // 视频落后时只请求 BufferDispatcher 跳到最新关键帧并清掉积压，
-        // 具体丢帧在渲染侧完成。
-        if (outData->keyFrame) {
-            isCatchUpRequested_ = false;
-        } else if (!isCatchUpRequested_ && bufferReceiver_ != nullptr && videoSinkDecoder_ != nullptr &&
-                   videoSinkDecoder_->IsVideoTooLate(static_cast<int64_t>(outData->pts))) {
-            isCatchUpRequested_ = true;
-            bufferReceiver_->EnableKeyRedirect(true);
-            SHARING_LOGW("car scene: video too late, redirect to latest key frame.");
-        }
+        HandleVideoCatchUp(outData);
 #endif
         if (videoSinkDecoder_) {
             if (outData->keyFrame) {
@@ -258,6 +249,26 @@ void VideoPlayController::VideoPlayThread()
 
     SHARING_LOGD("play thread exit, mediachannelId: %{public}u tid: %{public}d.", mediachannelId_, gettid());
 }
+
+#ifdef WFD_TRAVEL_SCENE
+void VideoPlayController::HandleVideoCatchUp(const MediaData::Ptr &outData)
+{
+    if (outData == nullptr) {
+        return;
+    }
+    // 车机场景：解码前不丢帧，保证解码器持续吃满码流，避免输入饥饿；
+    // 视频落后时只请求 BufferDispatcher 跳到最新关键帧并清掉积压，
+    // 具体丢帧在渲染侧完成。
+    if (outData->keyFrame) {
+        isCatchUpRequested_ = false;
+    } else if (!isCatchUpRequested_ && bufferReceiver_ != nullptr && videoSinkDecoder_ != nullptr &&
+               videoSinkDecoder_->IsVideoTooLate(static_cast<int64_t>(outData->pts))) {
+        isCatchUpRequested_ = true;
+        bufferReceiver_->EnableKeyRedirect(true);
+        SHARING_LOGW("car scene: video too late, redirect to latest key frame.");
+    }
+}
+#endif
 
 void VideoPlayController::ProcessVideoData(const char *data, int32_t size, uint64_t pts)
 {

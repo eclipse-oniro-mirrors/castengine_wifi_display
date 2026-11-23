@@ -1030,6 +1030,10 @@ int32_t WfdSinkScene::HandleAppendSurface(std::shared_ptr<WfdAppendSurfaceReq> &
         if (itemDev->second->isRunning) {
             uint32_t contextId = itemDev->second->contextId;
             uint32_t agentId = itemDev->second->agentId;
+#ifdef WFD_TRAVEL_SCENE
+            bool needStartPlay = !itemDev->second->isPlayStarted;
+            itemDev->second->isPlayStarted = true;
+#endif
 
             auto startSessionMsg = std::make_shared<WfdSinkSessionEventMsg>();
             startSessionMsg->type = EVENT_WFD_REQUEST_IDR;
@@ -1047,6 +1051,12 @@ int32_t WfdSinkScene::HandleAppendSurface(std::shared_ptr<WfdAppendSurfaceReq> &
             itemDev->second->state = ConnectionState::PLAYING;
             ConnectionInfo connectionInfo = *itemDev->second;
             lock.unlock();
+#ifdef WFD_TRAVEL_SCENE
+            // 选屏（追加 surface）之后再启动音视频播放，避免选屏期间音频提前出声
+            if (needStartPlay) {
+                sharingAdapter->Play(contextId, agentId);
+            }
+#endif
             OnConnectionChanged(connectionInfo);
         }
     }
@@ -1241,6 +1251,11 @@ int32_t WfdSinkScene::HandlePlay(std::shared_ptr<WfdPlayReq> &msg, std::shared_p
             itemDev->second->isRunning = true;
         }
 
+#ifdef WFD_TRAVEL_SCENE
+        // 已有选屏 surface 才启动播放；否则等 HandleAppendSurface 中选屏后再启动
+        itemDev->second->isPlayStarted = !surfaceList.empty();
+#endif
+
         lock.unlock();
 
         auto startSessionMsg = std::make_shared<WfdSinkSessionEventMsg>();
@@ -1274,7 +1289,13 @@ int32_t WfdSinkScene::HandlePlay(std::shared_ptr<WfdPlayReq> &msg, std::shared_p
             }
         }
 
+#ifdef WFD_TRAVEL_SCENE
+        if (!surfaceList.empty()) {
+            sharingAdapter->Play(contextId, agentId);
+        }
+#else
         sharingAdapter->Play(contextId, agentId);
+#endif
     }
 
     return 0;
@@ -1557,6 +1578,7 @@ void WfdSinkScene::WfdP2pStart()
             group.GetP2pGroupStatus() == Wifi::P2pGroupStatus::GS_STARTED) {
             SHARING_LOGI("reuse existing car GO, keep listen for discovery");
         }
+        return;
 #endif
         p2pInstance_->StartP2pListen(P2P_LISTEN_PERIOD, P2P_LISTEN_INTERVAL);
     }
@@ -2079,8 +2101,9 @@ void WfdSinkScene::P2pRemoveClient(ConnectionInfo &connectionInfo)
     info.mac = connectionInfo.mac;
     info.ip = connectionInfo.ip;
     info.host = connectionInfo.deviceName;
-
+#ifndef WFD_TRAVEL_SCENE
     p2pInstance_->RemoveGroupClient(info);
+#endif
 }
 
 void WfdSinkScene::OnDecoderAccelerationDone(ConnectionInfo &connectionInfo)

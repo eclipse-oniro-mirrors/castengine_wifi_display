@@ -15,8 +15,7 @@
     "syscap": [
     ],
     "features": [
-      "sharing_framework_feature_coverage = false",
-      "wifi_display_support_travel"
+      "sharing_framework_feature_coverage = false"
     ],
     "adapted_system_type": [
       "standard"

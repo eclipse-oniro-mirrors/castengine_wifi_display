@@ -60,6 +60,9 @@ struct SourceConfig {
 
 struct ConnectionInfo {
     bool isRunning = false;
+#ifdef WFD_TRAVEL_SCENE
+    bool isPlayStarted = false;
+#endif
 
     int32_t ctrlPort = 0;
     uint32_t agentId = INVALID_ID;

@@ -32,6 +32,9 @@ config("wifi_display_feature_flags") {
   if (wifi_display_support_source) {
     cflags += [ "-DWIFI_DISPLAY_SOURCE" ]
   }
+  if (wifi_display_support_travel) {
+    cflags += [ "-DWFD_TRAVEL_SCENE" ]
+  }
 }
 
 config("wifi_display_default_config") {

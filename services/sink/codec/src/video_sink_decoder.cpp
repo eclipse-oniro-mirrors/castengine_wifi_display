@@ -120,6 +120,16 @@ void VideoSinkDecoder::SetVideoAudioSync(std::shared_ptr<VideoAudioSync> videoAu
     videoAudioSync_ = videoAudioSync;
 }
 
+#ifdef WFD_TRAVEL_SCENE
+bool VideoSinkDecoder::IsVideoTooLate(int64_t pts)
+{
+    if (videoAudioSync_ == nullptr) {
+        return false;
+    }
+    return videoAudioSync_->IsVideoTooLate(pts);
+}
+#endif
+
 bool VideoSinkDecoder::Start()
 {
     SHARING_LOGD("trace.");

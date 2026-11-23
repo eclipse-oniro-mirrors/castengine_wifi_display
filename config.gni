@@ -17,4 +17,5 @@ declare_args() {
   sharing_framework_support_wfd = true
   wifi_display_support_sink = true
   wifi_display_support_source = true
+  wifi_display_support_travel = false
 }

@@ -71,6 +71,15 @@ public:
             const Wifi::WifiP2pDevice &device) override;
 
     private:
+#ifdef WFD_TRAVEL_SCENE
+        void HandleGcJoinGroupCar(const std::shared_ptr<WfdSinkScene> &parent,
+            const OHOS::Wifi::GcInfo &info);
+        bool FindGcDevice(const std::vector<Wifi::WifiP2pDevice> &devices,
+            const OHOS::Wifi::GcInfo &info, ConnectionInfo &connectionInfo);
+#else
+        void HandleGcJoinGroupDefault(const std::shared_ptr<WfdSinkScene> &parent,
+            const OHOS::Wifi::GcInfo &info);
+#endif
         std::weak_ptr<WfdSinkScene> parent_;
         WfdTrustListManager wfdTrustListManager_;
         static std::unordered_map<Wifi::ErrCode, SinkErrorCode> wifiErrorMapping_;

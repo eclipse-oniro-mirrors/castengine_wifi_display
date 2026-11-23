@@ -16,6 +16,7 @@
 #include "wfd_sink_scene_test.h"
 #include "common/sharing_log.h"
 #include "wfd_session_def.h"
+#include "surface.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -483,6 +484,49 @@ HWTEST_F(WfdSinkSceneTest, HandleAppendSurface_002, TestSize.Level1)
     EXPECT_EQ(ret, -1);
 }
 
+#ifdef WFD_TRAVEL_SCENE
+HWTEST_F(WfdSinkSceneTest, HandleAppendSurface_003, TestSize.Level1)
+{
+    ASSERT_TRUE(sinkScene_ != nullptr);
+
+    // 设备运行中且此前未启动过播放时，首次追加 surface 应触发播放
+    EXPECT_CALL(*(sinkScene_->mockSharingAdapter_), ForwardEvent(1, 1, _, false))
+        .WillOnce(Return(0));
+    EXPECT_CALL(*(sinkScene_->mockSharingAdapter_), AppendSurface(1, 1, _, _))
+        .WillOnce(Return(0));
+    EXPECT_CALL(*(sinkScene_->mockSharingAdapter_), Play(1, 1))
+        .WillOnce(Return(0));
+    EXPECT_CALL(*(sinkScene_->mockIpcAdapter_), SendRequest(_, _))
+        .WillOnce(Return(0));
+
+    RestoreConnMap();
+    sinkScene_->devSurfaceItemMap_.clear();
+    auto connIt = sinkScene_->devConnectionMap_.find("AA:BB:CC:DD:EE:FF");
+    ASSERT_TRUE(connIt != sinkScene_->devConnectionMap_.end());
+    ASSERT_TRUE(connIt->second != nullptr);
+    connIt->second->isRunning = true;
+    connIt->second->isPlayStarted = false;
+
+    sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer("ut_append_surface");
+    ASSERT_TRUE(consumerSurface != nullptr);
+    sptr<IBufferProducer> producer = consumerSurface->GetProducer();
+    ASSERT_TRUE(producer != nullptr);
+
+    auto msg = std::make_shared<WfdAppendSurfaceReq>();
+    auto reply = std::make_shared<WfdCommonRsp>();
+    msg->deviceId = "AA:BB:CC:DD:EE:FF";
+    msg->surface = producer->AsObject();
+    ASSERT_TRUE(msg->surface != nullptr);
+    int32_t ret = sinkScene_->HandleAppendSurface(msg, reply);
+    EXPECT_EQ(ret, 0) << "HandleAppendSurface should succeed with a valid surface";
+    auto it = sinkScene_->devConnectionMap_.find("AA:BB:CC:DD:EE:FF");
+    ASSERT_TRUE(it != sinkScene_->devConnectionMap_.end());
+    ASSERT_TRUE(it->second != nullptr);
+    EXPECT_TRUE(it->second->isPlayStarted) << "first append should mark play as started";
+    EXPECT_EQ(it->second->state, ConnectionState::PLAYING) << "connection state should become PLAYING";
+}
+#endif
+
 HWTEST_F(WfdSinkSceneTest, HandleRemoveSurface_001, TestSize.Level1)
 {
     ASSERT_TRUE(sinkScene_ != nullptr);
@@ -585,6 +629,32 @@ HWTEST_F(WfdSinkSceneTest, HandlePlay_001, TestSize.Level1)
     EXPECT_EQ(ret, -1);
 }
 
+#ifdef WFD_TRAVEL_SCENE
+HWTEST_F(WfdSinkSceneTest, HandlePlay_002, TestSize.Level1)
+{
+    ASSERT_TRUE(sinkScene_ != nullptr);
+
+    EXPECT_CALL(*(sinkScene_->mockSharingAdapter_), ForwardEvent(1, 1, _, true))
+        .WillOnce(Return(0));
+    EXPECT_CALL(*(sinkScene_->mockSharingAdapter_), Start(1, 1))
+        .WillOnce(Return(0));
+    // 无有效 surface 时不启动音视频播放，等待选屏（HandleAppendSurface）后再启动
+    EXPECT_CALL(*(sinkScene_->mockSharingAdapter_), Play(1, 1))
+        .Times(0);
+
+    RestoreConnMap();
+    sinkScene_->devSurfaceItemMap_.clear();
+    auto msg = std::make_shared<WfdPlayReq>();
+    auto reply = std::make_shared<WfdCommonRsp>();
+    msg->deviceId = "AA:BB:CC:DD:EE:FF";
+    int32_t ret = sinkScene_->HandlePlay(msg, reply);
+    EXPECT_EQ(ret, 0) << "HandlePlay should succeed even without surface";
+    auto it = sinkScene_->devConnectionMap_.find("AA:BB:CC:DD:EE:FF");
+    ASSERT_TRUE(it != sinkScene_->devConnectionMap_.end());
+    ASSERT_TRUE(it->second != nullptr);
+    EXPECT_FALSE(it->second->isPlayStarted) << "isPlayStarted should stay false without surface";
+}
+#else
 HWTEST_F(WfdSinkSceneTest, HandlePlay_002, TestSize.Level1)
 {
     ASSERT_TRUE(sinkScene_ != nullptr);
@@ -603,6 +673,7 @@ HWTEST_F(WfdSinkSceneTest, HandlePlay_002, TestSize.Level1)
     int32_t ret = sinkScene_->HandlePlay(msg, reply);
     EXPECT_EQ(ret, 0);
 }
+#endif
 
 HWTEST_F(WfdSinkSceneTest, HandlePlay_003, TestSize.Level1)
 {
@@ -625,6 +696,44 @@ HWTEST_F(WfdSinkSceneTest, HandlePlay_003, TestSize.Level1)
     int32_t ret = sinkScene_->HandlePlay(msg, reply);
     EXPECT_EQ(ret, 0);
 }
+
+#ifdef WFD_TRAVEL_SCENE
+HWTEST_F(WfdSinkSceneTest, HandlePlay_004, TestSize.Level1)
+{
+    ASSERT_TRUE(sinkScene_ != nullptr);
+
+    // 已存在该设备的有效 surface 时，HandlePlay 应追加 surface 并启动播放
+    EXPECT_CALL(*(sinkScene_->mockSharingAdapter_), ForwardEvent(1, 1, _, true))
+        .WillOnce(Return(0));
+    EXPECT_CALL(*(sinkScene_->mockSharingAdapter_), Start(1, 1))
+        .WillOnce(Return(0));
+    EXPECT_CALL(*(sinkScene_->mockSharingAdapter_), AppendSurface(1, 1, _, _))
+        .WillOnce(Return(0));
+    EXPECT_CALL(*(sinkScene_->mockSharingAdapter_), Play(1, 1))
+        .WillOnce(Return(0));
+
+    RestoreConnMap();
+    sinkScene_->devSurfaceItemMap_.clear();
+    sptr<Surface> surface = Surface::CreateSurfaceAsConsumer("ut_play_surface");
+    ASSERT_TRUE(surface != nullptr);
+    auto surfaceItem = std::make_shared<DevSurfaceItem>();
+    surfaceItem->contextId = 1;
+    surfaceItem->agentId = 1;
+    surfaceItem->deviceId = "AA:BB:CC:DD:EE:FF";
+    surfaceItem->surfacePtr = surface;
+    sinkScene_->devSurfaceItemMap_.emplace(surface->GetUniqueId(), surfaceItem);
+
+    auto msg = std::make_shared<WfdPlayReq>();
+    auto reply = std::make_shared<WfdCommonRsp>();
+    msg->deviceId = "AA:BB:CC:DD:EE:FF";
+    int32_t ret = sinkScene_->HandlePlay(msg, reply);
+    EXPECT_EQ(ret, 0) << "HandlePlay should succeed with a valid surface";
+    auto it = sinkScene_->devConnectionMap_.find("AA:BB:CC:DD:EE:FF");
+    ASSERT_TRUE(it != sinkScene_->devConnectionMap_.end());
+    ASSERT_TRUE(it->second != nullptr);
+    EXPECT_TRUE(it->second->isPlayStarted) << "isPlayStarted should be true when a valid surface exists";
+}
+#endif
 
 HWTEST_F(WfdSinkSceneTest, HandlePause_001, TestSize.Level1)
 {

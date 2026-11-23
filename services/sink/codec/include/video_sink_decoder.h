@@ -59,6 +59,9 @@ public:
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<MediaAVCodec::AVSharedMemory> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, MediaAVCodec::AVCodecBufferInfo info,
         MediaAVCodec::AVCodecBufferFlag flag, std::shared_ptr<MediaAVCodec::AVSharedMemory> buffer) override;
+#ifdef WFD_TRAVEL_SCENE
+    bool IsVideoTooLate(int64_t pts);
+#endif
 
 private:
     bool InitDecoder();
@@ -84,6 +87,9 @@ public:
     CodecId videoCodecId_ = CODEC_NONE;
     sptr<OHOS::Surface> surface_ = nullptr;
     std::shared_ptr<VideoAudioSync> videoAudioSync_ = nullptr;
+#ifdef WFD_TRAVEL_SCENE
+    bool isCatchingUp_ = false;
+#endif
 };
 } // namespace Sharing
 } // namespace OHOS

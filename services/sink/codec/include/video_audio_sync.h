@@ -32,6 +32,10 @@ public:
     void GetAVSyncExceptionCount(uint32_t &videoTooLateCount, uint32_t &audioTooLateCount,
                                  uint32_t &videoDropFrameCount);
     void ResetAVSyncExceptionCount();
+#ifdef WFD_TRAVEL_SCENE
+    bool IsVideoTooLate(int64_t videoTimestamp);
+    void ResetSyncBaseline();
+#endif
 
 private:
     bool ProcessAVSyncStrategy(int64_t videoTimestamp);

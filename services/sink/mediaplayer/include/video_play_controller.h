@@ -81,6 +81,9 @@ private:
     void StartVideoThread();
     void ProcessVideoData(const char *data, int32_t size, uint64_t pts);
     int32_t RenderInCopyMode(const DataBuffer::Ptr decodedData);
+#ifdef WFD_TRAVEL_SCENE
+    void HandleVideoCatchUp(const MediaData::Ptr &outData);
+#endif
 
 private:
     bool firstFrame_ = true;

@@ -225,10 +225,15 @@ void VideoPlayController::VideoPlayThread()
             continue;
         }
 #ifdef WFD_TRAVEL_SCENE
-        if (videoSinkDecoder_ != nullptr && !outData->keyFrame &&
-            videoSinkDecoder_->IsVideoTooLate(static_cast<int64_t>(outData->pts))) {
-            MEDIA_LOGD("car scene: skip late video frame before decode.");
-            continue;
+        // 视频落后时只请求 BufferDispatcher 跳到最新关键帧并清掉积压，
+        // 具体丢帧在渲染侧完成。
+        if (outData->keyFrame) {
+            isCatchUpRequested_ = false;
+        } else if (!isCatchUpRequested_ && bufferReceiver_ != nullptr && videoSinkDecoder_ != nullptr &&
+                   videoSinkDecoder_->IsVideoTooLate(static_cast<int64_t>(outData->pts))) {
+            isCatchUpRequested_ = true;
+            bufferReceiver_->EnableKeyRedirect(true);
+            SHARING_LOGW("car scene: video too late, redirect to latest key frame.");
         }
 #endif
         if (videoSinkDecoder_) {

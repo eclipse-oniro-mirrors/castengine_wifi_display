@@ -96,6 +96,9 @@ private:
     std::shared_ptr<std::thread> videoPlayThread_ = nullptr;
     std::shared_ptr<BufferReceiver> bufferReceiver_ = nullptr;
     std::shared_ptr<VideoSinkDecoder> videoSinkDecoder_ = nullptr;
+#ifdef WFD_TRAVEL_SCENE
+    std::atomic_bool isCatchUpRequested_ = false;
+#endif
 
     VideoTrack videoTrack_;
 };

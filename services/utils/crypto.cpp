@@ -25,7 +25,7 @@ namespace Sharing {
 
 std::vector<uint8_t> GenerateSha256HashId(const uint8_t *originalId, uint32_t &len)
 {
-    if (originalId == nullptr || len == 0) {
+    if (originalId == nullptr || len < 32) {
         return std::vector<uint8_t>{};
     }
 

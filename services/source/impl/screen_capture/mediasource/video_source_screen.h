@@ -53,17 +53,13 @@ public:
     uint64_t GetScreenId();
 
 private:
-#ifdef WFD_SINK
     void RemoveScreenFromGroup() const;
-#endif
     void FrameRateControlTimerWorker();
 
     int32_t DestroyVirtualScreen() const;
     int32_t RegisterScreenGroupListener();
     int32_t UnregisterScreenGroupListener() const;
-#ifdef WFD_SINK
     int32_t SetEncoderSurface(sptr<OHOS::Surface> surface);
-#endif
     void SetScreenPixelFormat(uint64_t screenId);
     uint64_t CreateVirtualScreen(const VideoSourceConfigure &configure);
     void SetMultiScreenMode(Rosen::MultiScreenMode mode);

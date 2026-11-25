@@ -1,9 +1,9 @@
-# Copyright (c) 2026 Shenzhen Kaihong Digital Industry Development Co., Ltd.
-# Licensed under the Apache License, version 2.0 (the "License");
+# Copyright (c) 2023 Shenzhen Kaihong Digital Industry Development Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,7 @@ import("//build/ohos.gni")
 import("//foundation/CastEngine/castengine_wifi_display/config.gni")
 
 ohos_source_set("sharing_screen_capture_srcs") {
+  branch_protector_ret = "pac_ret"
   sanitize = {
     cfi = true
     cfi_cross_dso = true
@@ -26,6 +27,7 @@ ohos_source_set("sharing_screen_capture_srcs") {
 
   include_dirs = [
     "$SHARING_ROOT_DIR/services",
+    "$SHARING_ROOT_DIR/services/impl/wfd",
     "$SHARING_ROOT_DIR/services/source/impl/screen_capture",
     "$SHARING_ROOT_DIR/services/source/impl/screen_capture/mediasource",
     "$SHARING_ROOT_DIR/services/source/codec/include",
@@ -33,11 +35,10 @@ ohos_source_set("sharing_screen_capture_srcs") {
     "$SHARING_ROOT_DIR/services/utils",
     "$SHARING_ROOT_DIR/services/common",
     "$SHARING_ROOT_DIR/services/protocol/frame",
-    "$SHARING_ROOT_DIR/services/extend/magic_enum",
+    "$SHARING_ROOT_DIR/services/extend/magic_enum"
   ]
 
   sources = [
-    "$SHARING_ROOT_DIR/services/source/impl/screen_capture/mediasource/audio_source_capturer.cpp",
     "$SHARING_ROOT_DIR/services/source/impl/screen_capture/mediasource/video_source_screen.cpp",
     "$SHARING_ROOT_DIR/services/source/impl/screen_capture/screen_capture_consumer.cpp",
     "$SHARING_ROOT_DIR/services/source/impl/screen_capture/screen_capture_session.cpp",
@@ -47,6 +48,15 @@ ohos_source_set("sharing_screen_capture_srcs") {
     "$SHARING_ROOT_DIR/tests:coverage_flags",
     "$SHARING_ROOT_DIR:wifi_display_feature_flags",
   ]
+
+  defines = []
+  if (target_cpu == "arm64" || is_emulator) {
+    system_lib_path = "\"/system/lib64/\""
+  } else {
+    system_lib_path = "\"/system/lib/\""
+  }
+  defines += [ "SYSTEM_LIB_PATH = ${system_lib_path}" ]
+
 
   deps = [
     "$SHARING_ROOT_DIR/services/agent:sharing_agent_srcs",
@@ -61,13 +71,19 @@ ohos_source_set("sharing_screen_capture_srcs") {
     "audio_framework:audio_capturer",
     "av_codec:av_codec_client",
     "c_utils:utils",
-    "drivers_peripheral_display:hdi_gralloc_client",
+    "eventhandler:libeventhandler",
     "graphic_2d:librender_service_base",
     "graphic_surface:surface",
-    "ipc:ipc_single",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "window_manager:libdm",
+    "init:libbegetutil",
+    "graphic_2d:librender_service_client",
+    "graphic_2d:libgraphic_utils",
+    "graphic_2d:color_manager",
+    "json:nlohmann_json_static",
+    "power_manager:powermgr_client",
+    "ipc:ipc_single",
     "media_foundation:media_foundation",
     "ffmpeg:libohosffmpeg",
   ]

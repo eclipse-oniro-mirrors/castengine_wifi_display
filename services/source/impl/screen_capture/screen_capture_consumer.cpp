@@ -102,7 +102,7 @@ void ScreenCaptureConsumer::OnFrame(const Frame::Ptr &frame, FRAME_TYPE frameTyp
         pts = realPts;
         firstVideoFrame_ = false;
     } else if (lastPts_ > lastRealPts_ + LARGE_AVPTS_DIFF || lastPts_ + LARGE_AVPTS_DIFF <= lastRealPts_) {
-        SHARING_LOGE("Large diff, pts: %{public}lu, realpts: %{public}lu.", lastPts_, lastRealPts_);
+        SHARING_LOGE("Large diff, pts: %{public}" PRIu64 ", realpts: %{public}" PRIu64 ".", lastPts_, lastRealPts_);
         pts = realPts;
     } else if (lastPts_ > lastRealPts_) {
         pts = lastPts_ + lowInterval_;
@@ -120,20 +120,20 @@ void ScreenCaptureConsumer::OnFrame(const Frame::Ptr &frame, FRAME_TYPE frameTyp
         currentSecond_ = currentSecond;
     }
     frameCount_++;
-    auto mediaData = dispatcher->RequestDataBuffer(MEDIA_TYPE_VIDEO, len);
-    if (mediaData == nullptr) {
-        return;
-    }
-    mediaData->mediaType = MEDIA_TYPE_VIDEO;
+	auto mediaData = dispatcher->RequestDataBuffer(MEDIA_TYPE_VIDEO, len);
+	if (mediaData == nullptr) {
+		return;
+	}
+	mediaData->mediaType = MEDIA_TYPE_VIDEO;
     mediaData->codecId = frame->GetCodecId();
-    mediaData->isRaw = false;
-    mediaData->keyFrame = keyFrame;
-    mediaData->pts = pts;
-    if (keyFrame) {
-        SHARING_LOGE("[%{public}" PRId64 "] capture a video len:%{public}u.", mediaData->pts, len);
-    }
-    mediaData->buff = move(frame);
-    dispatcher->InputData(mediaData);
+	mediaData->isRaw = false;
+	mediaData->keyFrame = keyFrame;
+	mediaData->pts = pts;
+	if (keyFrame) {
+		SHARING_LOGE("[%{public}" PRId64 "] capture a video len:%{public}u.", mediaData->pts, len);
+	}
+	mediaData->buff = move(frame);
+	dispatcher->InputData(mediaData);
 }
 
 ScreenCaptureConsumer::ScreenCaptureConsumer()

@@ -205,13 +205,14 @@ void VideoSourceScreen::SetMultiScreenMode(Rosen::MultiScreenMode mode)
 
 void VideoSourceScreen::SetProjectionDisplay(uint32_t mode, uint32_t rotation, Rect mainScreenRegion)
 {
+
     SHARING_LOGI("%{public}s.", __FUNCTION__);
-    if (mode == 5) { // 5:SCREEN_MIRROR
+    if(mode == 5){
         SetMultiScreenMode(Rosen::MultiScreenMode::SCREEN_MIRROR);
         return;
     }
 
-    if (mode == 4) { // 4:SCREEN_EXTEND
+    if(mode == 4){
         SetMultiScreenMode(Rosen::MultiScreenMode::SCREEN_EXTEND);
         return;
     }
@@ -230,10 +231,10 @@ void VideoSourceScreen::SetProjectionDisplay(uint32_t mode, uint32_t rotation, R
     Rosen::DMRect mainScreenDMRegion;
     mainScreenDMRegion.posX_ = mainScreenRegion.x;
     mainScreenDMRegion.posY_ = mainScreenRegion.y;
-    uint32_t widthUint = (uint32_t)mainScreenRegion.w;
-    uint32_t heightUint = (uint32_t)mainScreenRegion.h;
-    mainScreenDMRegion.width_ = widthUint;
-    mainScreenDMRegion.height_ = heightUint;
+	uint32_t width_uint = (uint32_t)mainScreenRegion.w;
+	uint32_t height_uint = (uint32_t)mainScreenRegion.h;
+    mainScreenDMRegion.width_ = width_uint;
+    mainScreenDMRegion.height_ = height_uint;
     MakeMirrorByRect(mainScreenDMRegion);
 }
 
@@ -339,7 +340,7 @@ Rosen::VirtualScreenOption VideoSourceScreen::CreateVirtualScreenOption(const Vi
                                          true,
                                          true,
                                          configure.serialNumber_};
-    option.bundleName_ = "cast";
+    option.bundleName_ = HUAWEI_CAST_BUNDLE_NAME;
     if (configure.isPc_) {
         SHARING_LOGI("set pc mode flag");
         option.virtualScreenFlag_ = Rosen::VirtualScreenFlag::DEFAULT;
@@ -543,7 +544,6 @@ void VideoSourceScreen::StopScreenSourceCapture()
     }
 }
 
-#ifdef WFD_SINK
 int32_t VideoSourceScreen::SetEncoderSurface(sptr<OHOS::Surface> surface)
 {
     SHARING_LOGI("%{public}s.", __FUNCTION__);
@@ -579,7 +579,6 @@ void VideoSourceScreen::RemoveScreenFromGroup() const
         SHARING_LOGE("Remove screen from group failed, screenId:%{public}" PRIu64 "!", screenId_);
     }
 }
-#endif
 
 void VideoSourceScreen::SetRefreshRateVote(const std::string &jsonParam)
 {

@@ -205,14 +205,13 @@ void VideoSourceScreen::SetMultiScreenMode(Rosen::MultiScreenMode mode)
 
 void VideoSourceScreen::SetProjectionDisplay(uint32_t mode, uint32_t rotation, Rect mainScreenRegion)
 {
-
     SHARING_LOGI("%{public}s.", __FUNCTION__);
-    if(mode == 5) { // 5:mirror
+    if (mode == 5) { // 5:mirror
         SetMultiScreenMode(Rosen::MultiScreenMode::SCREEN_MIRROR);
         return;
     }
 
-    if(mode == 4) { // 4:mextend
+    if (mode == 4) { // 4:extend
         SetMultiScreenMode(Rosen::MultiScreenMode::SCREEN_EXTEND);
         return;
     }

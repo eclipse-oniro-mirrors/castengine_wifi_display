@@ -14,7 +14,7 @@
  */
 
 #include <cstddef>
-
+#include <inttypes.h>
 #include "video_source_screen.h"
 #include "screen.h"
 #include "sharing_log.h"
@@ -50,7 +50,7 @@ public:
 
     void OnChange(Rosen::ScreenId screenId) override
     {
-        SHARING_LOGE("OnChange screenId = %{public}lu", screenId);
+        SHARING_LOGE("OnChange screenId = %{public}" PRIu64"", screenId);
         if (screenId == screenId_) {
             DisplayOnSourceModeChange(screenId);
         }

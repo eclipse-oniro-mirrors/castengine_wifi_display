@@ -18,7 +18,7 @@
 
 #include <mutex>
 #include "audio_aac_encoder.h"
-#include "audio_source_capturer.h"
+#include "audio_capturer.h"
 #include "source_codec_factory.h"
 #include "magic_enum.hpp"
 #include "mediachannel/base_consumer.h"
@@ -39,6 +39,7 @@ public:
 
     private:
         std::weak_ptr<ScreenCaptureConsumer> parent_;
+        uint64_t DebugPts = 0;
     };
 
     ScreenCaptureConsumer();
@@ -68,10 +69,20 @@ private:
     bool InitCapture(uint64_t screenId);
     bool InitVideoCapture(uint64_t screenId);
 
+    void AudioCaptureThreadWorker();
+
     void HandleProsumerInitState(SharingEvent &event);
     void HandleProsumerPlay(SharingEvent &event);
-    void HandleSpsFrame(BufferDispatcher::Ptr dispatcher, const Frame::Ptr &frame);
-    void HandlePpsFrame(BufferDispatcher::Ptr dispatcher, const Frame::Ptr &frame);
+    void HandleProsumerSetAudio(SharingEvent &event);
+    void HandleProsumerSetDisplay(SharingEvent &event);
+    void HandleProsumerEvent(SharingEvent &event);
+    void HandleProsumerRequestIdr(SharingEvent &event);
+
+    bool IsSilentFrame(const uint8_t *buffer, size_t bufLen);
+    void HandleUpdateBitrate(const std::string &jsonParam);
+    void NotifyMiracastScreenId(int32_t eventId, SharingEvent &event);
+    void HandleScreenParam(std::string &jsonParam);
+    void HandleDealVirtualScreen(std::string &jsonParam);
 
 private:
     std::atomic<bool> paused_ = false;
@@ -81,9 +92,26 @@ private:
     std::shared_ptr<VideoSourceScreen> videoSourceScreen_ = nullptr;
     std::shared_ptr<VideoSourceEncoder> videoSourceEncoder_ = nullptr;
 
+    size_t audioBufferLen_ = 0;
     std::shared_ptr<AudioEncoder> audioEncoder_ = nullptr;
-    std::shared_ptr<AudioSourceCapturer> audioSourceCapturer_ = nullptr;
+    std::unique_ptr<std::thread> audioCaptureThread_ = nullptr;
     std::shared_ptr<AudioEncoderReceiver> audioEncoderReceiver_ = nullptr;
+    std::unique_ptr<AudioStandard::AudioCapturer> audioCapturer_ = nullptr;
+
+    bool isHiVisionScreen_ = false;
+    bool firstVideoFrame_ = true;
+    uint64_t lastPts_ = 0;
+    uint64_t lastRealPts_ = 0;
+    uint64_t frameCount_ = 0;
+    uint64_t currentSecond_ = 0;
+    uint64_t lowInterval_ = LOW_PTS_INTERVAL;
+    uint64_t highInterval_ = HIGH_PTS_INTERVAL;
+    uint32_t audioFrameCount_ = 0;
+    uint32_t silentFrameCount_ = 0;
+    int32_t dpi_ = 0;
+    int32_t mode_ = 0;
+    bool isPc_ = false;
+    std::string serialNumber_ = "";
 };
 
 } // namespace Sharing

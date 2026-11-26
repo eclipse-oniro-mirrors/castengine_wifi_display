@@ -38,6 +38,13 @@ private:
     void HandleRtspPlay(SharingEvent &event);
     void HandleSessionInit(SharingEvent &event);
     void HandleProsumerInitState(SharingEvent &event);
+    void HandleSessionSetAudio(SharingEvent &event);
+    void HandleSessionRequestIdr(SharingEvent &event);
+    void HandleSessionSetDisplay(SharingEvent &event);
+    void HandleSessionCommon(SharingEvent &event);
+    void HandleSessionAppendSurface(SharingEvent &event);
+    void NotifyRtspPlay();
+    void NotifyEvent(SharingEvent &event);
 
 private:
     uint64_t screenId_ = 0;

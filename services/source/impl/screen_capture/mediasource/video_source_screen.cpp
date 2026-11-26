@@ -14,7 +14,6 @@
  */
 
 #include <cstddef>
-#include <inttypes.h>
 #include "video_source_screen.h"
 #include "screen.h"
 #include "sharing_log.h"

@@ -65,6 +65,16 @@ bool MediaController::Init(AudioTrack audioTrack, VideoTrack videoTrack, bool is
         videoAudioSync_->SetAudioPlayController(audioPlayController_);
     }
 
+#ifdef WFD_TRAVEL_SCENE
+    // surface 就绪前先丢弃媒体，避免 dispatcher 缓存造成解码积压。
+    auto mediaChannel = mediaChannel_.lock();
+    if (mediaChannel != nullptr) {
+        auto dispatcher = mediaChannel->GetDispatcher();
+        if (dispatcher != nullptr) {
+            dispatcher->SetWaitSurface(true);
+        }
+    }
+#endif
     return true;
 }
 
@@ -78,9 +88,22 @@ void MediaController::Start()
         SHARING_LOGE("start must be after init.");
         return;
     }
+#ifdef WFD_TRAVEL_SCENE
+        // 车机场景：视频流已就绪但 surface 还没追加时先不启动音频，
+        // 等首个 surface 就绪后再一起起播，避免音频先起播使视频被 AV 同步判为迟到而持续丢帧。
+        if (CODEC_NONE != videoTrack_.codecId && videoPlayerMap_.empty()) {
+            isStartPending_ = true;
+            SHARING_LOGW("video surface not ready, defer av start, mediachannelId: %{public}u.", mediachannelId_);
+            return;
+        }
+#endif
 
     auto dispatcher = mediaChannel->GetDispatcher();
     RETURN_IF_NULL(dispatcher);
+#ifdef WFD_TRAVEL_SCENE
+    // 真正起播时恢复媒体缓存（视频场景此时 surface 已就绪；纯音频场景无 surface）。
+    dispatcher->SetWaitSurface(false);
+#endif
     {
         std::lock_guard<std::mutex> lock(playAudioMutex_);
         if (nullptr != audioPlayController_) {
@@ -98,6 +121,11 @@ void MediaController::Start()
             }
         }
     }
+#ifdef WFD_TRAVEL_SCENE
+    if (isPlaying_) {
+        isStartPending_ = false;
+    }
+#endif
 
     SHARING_LOGI("media play start done, mediachannelId: %{public}u.", mediachannelId_);
 }
@@ -127,6 +155,9 @@ void MediaController::Stop()
     }
 
     isPlaying_ = false;
+#ifdef WFD_TRAVEL_SCENE
+    isStartPending_ = false;
+#endif
     SHARING_LOGI("media play stop done, mediachannelId: %{public}u.", mediachannelId_);
 }
 
@@ -181,6 +212,7 @@ bool MediaController::AppendSurface(sptr<Surface> surface, SceneType sceneType)
 
     auto videoPlayController = std::make_shared<VideoPlayController>(mediachannelId_);
     uint64_t surfaceId = surface->GetUniqueId();
+    bool needStartPending = false;
     {
         std::lock_guard<std::mutex> lock(playVideoMutex_);
         if (videoPlayerMap_.count(surfaceId)) {
@@ -197,7 +229,10 @@ bool MediaController::AppendSurface(sptr<Surface> surface, SceneType sceneType)
             return false;
         }
 
-        if (isPlaying_) {
+#ifdef WFD_TRAVEL_SCENE
+        needStartPending = isStartPending_.load();
+#endif
+        if (!needStartPending && isPlaying_) {
             auto mediaChannel = mediaChannel_.lock();
             if (mediaChannel) {
                 auto dispatcher = mediaChannel->GetDispatcher();
@@ -210,6 +245,23 @@ bool MediaController::AppendSurface(sptr<Surface> surface, SceneType sceneType)
         videoPlayController->SetMediaController(shared_from_this());
         SHARING_LOGI("media play append surface done, mediachannelId: %{public}u.", mediachannelId_);
     }
+
+#ifdef WFD_TRAVEL_SCENE
+    // surface 已就绪，恢复媒体缓存。
+    {
+        auto mediaChannel = mediaChannel_.lock();
+        if (mediaChannel != nullptr) {
+            auto dispatcher = mediaChannel->GetDispatcher();
+            if (dispatcher != nullptr) {
+                dispatcher->SetWaitSurface(false);
+            }
+        }
+    }
+    // 首个 surface 就绪：之前推迟的起播在这里把音频和视频一起拉起。
+    if (needStartPending) {
+        Start();
+    }
+#endif
 
     return true;
 }

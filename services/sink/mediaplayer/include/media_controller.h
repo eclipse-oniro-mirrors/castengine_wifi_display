@@ -66,6 +66,10 @@ private:
     std::mutex playAudioMutex_;
     std::mutex playVideoMutex_;
     std::atomic_bool isPlaying_ = false;
+#ifdef WFD_TRAVEL_SCENE
+    // 有视频流但 surface 尚未就绪时，推迟音视频起播，保证两者一起起播。
+    std::atomic_bool isStartPending_ = false;
+#endif
     std::weak_ptr<MediaChannel> mediaChannel_;
     std::shared_ptr<AudioPlayController> audioPlayController_ = nullptr;
     std::map<uint64_t, std::shared_ptr<VideoPlayController>> videoPlayerMap_;

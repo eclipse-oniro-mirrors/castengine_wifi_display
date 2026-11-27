@@ -509,6 +509,14 @@ void BufferDispatcher::SetDataMode(MediaDispacherMode dataMode)
     dataMode_ = dataMode;
 }
 
+#ifdef WFD_TRAVEL_SCENE
+void BufferDispatcher::SetWaitSurface(bool wait)
+{
+    SHARING_LOGI("set wait surface: %{public}s.", wait ? "true" : "false");
+    waitSurface_ = wait;
+}
+#endif
+
 void BufferDispatcher::ReleaseIdleBuffer()
 {
     SHARING_LOGD("BufferDispatcher idle Release Start.");
@@ -952,6 +960,16 @@ int32_t BufferDispatcher::InputData(const MediaData::Ptr &data)
     }
     MEDIA_LOGD("inputmediatype: %{public}d, keyFrame: %{public}d, pts: %{public}" PRIu64 ".", data->mediaType,
                data->keyFrame, data->pts);
+
+#ifdef WFD_TRAVEL_SCENE
+    // surface 就绪前不缓存媒体：直接丢弃，避免 dispatcher 积压导致后续解码追不上。
+    if (waitSurface_.load()) {
+        // 仍然刷新 writing_，避免被写入超时定时器误判为数据中断。
+        writing_.store(true);
+        MEDIA_LOGD("surface not ready, drop media before cache, pts: %{public}" PRIu64 ".", data->pts);
+        return 0;
+    }
+#endif
 
     if (!writing_.load()) {
         writing_.store(true);

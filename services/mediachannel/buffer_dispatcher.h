@@ -250,6 +250,9 @@ public:
     void SetPpsNalu(MediaData::Ptr ppsbuf);
     void SetBufferCapacity(size_t capacity);
     void SetDataMode(MediaDispacherMode dataMode);
+#ifdef WFD_TRAVEL_SCENE
+    void SetWaitSurface(bool wait);
+#endif
     int32_t InputData(const MediaData::Ptr &data);
 
     void FlushBuffer();
@@ -357,6 +360,10 @@ private:
     MediaData::Ptr ppsBuf_ = nullptr;
     DataSpec::Ptr refHead_ = nullptr;
     MediaDispacherMode dataMode_ = MEDIA_VIDEO_AUDIO_MIXED;
+#ifdef WFD_TRAVEL_SCENE
+    // surface 就绪前丢弃媒体，避免在 dispatcher 中缓存造成解码积压。
+    std::atomic<bool> waitSurface_ = false;
+#endif
 };
 
 } // namespace Sharing

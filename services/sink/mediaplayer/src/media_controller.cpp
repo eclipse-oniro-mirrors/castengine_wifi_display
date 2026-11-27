@@ -247,6 +247,15 @@ bool MediaController::AppendSurface(sptr<Surface> surface, SceneType sceneType)
     }
 
 #ifdef WFD_TRAVEL_SCENE
+    HandleSurfaceReady(needStartPending);
+#endif
+
+    return true;
+}
+
+#ifdef WFD_TRAVEL_SCENE
+void MediaController::HandleSurfaceReady(bool needStartPending)
+{
     // surface 已就绪，恢复媒体缓存。
     {
         auto mediaChannel = mediaChannel_.lock();
@@ -261,10 +270,8 @@ bool MediaController::AppendSurface(sptr<Surface> surface, SceneType sceneType)
     if (needStartPending) {
         Start();
     }
-#endif
-
-    return true;
 }
+#endif
 
 void MediaController::RemoveSurface(uint64_t surfaceId)
 {

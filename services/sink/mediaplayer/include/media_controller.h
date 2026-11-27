@@ -61,6 +61,9 @@ public:
 
 private:
     void ReportAVSyncExceptionIfNeeded();
+#ifdef WFD_TRAVEL_SCENE
+    void HandleSurfaceReady(bool needStartPending);
+#endif
 
     uint32_t mediachannelId_ = 0;
     std::mutex playAudioMutex_;
